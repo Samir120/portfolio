@@ -1,0 +1,251 @@
+# 02 — Design System
+
+The visual language is terminal-inspired: two typefaces, hairline borders,
+no rounded corners, and themes named after terminal colour schemes. The
+default palette is Tokyo Night; token values below are the exact hex
+values, not approximations. Page structure is a one-scroll home and
+list-based about, projects and contact pages. This document is the spec;
+`app/globals.css` implements it.
+
+## 1. Principles
+
+1. **Flat.** No shadows, no gradients, no rounded corners. Depth comes from
+   1px borders and background steps (`bg` → `surface`).
+2. **Typography does the work.** Two families, a small scale, generous
+   measure. Decoration is a hover state.
+3. **Themeable by construction.** Components only reference semantic tokens.
+   A theme is a block of CSS variables; adding one touches nothing else.
+4. **Dark first, light equal.** Both themes get the same contrast checks.
+5. **The one flourish** is the theme picker (`T`). Everything else is still.
+
+## 2. Typography
+
+| Role          | Family                    | Loaded via                            |
+| ------------- | ------------------------- | ------------------------------------- |
+| `--font-sans` | Geist (variable)          | `next/font/google` → `Geist`          |
+| `--font-mono` | JetBrains Mono (variable) | `next/font/google` → `JetBrains_Mono` |
+
+Both are exposed as CSS variables from `app/layout.tsx` (`variable:
+'--font-sans'` / `'--font-mono'`) and mapped in Tailwind as `font-sans` and
+`font-mono`. Mono is used for: eyebrow labels, dates, stack tags, `kbd`
+hints, the footer location stamp, and code.
+
+Scale (Tailwind classes; nothing custom):
+
+| Element              | Classes                                                      |
+| -------------------- | ------------------------------------------------------------ |
+| Page title (H1)      | `text-3xl sm:text-4xl font-semibold tracking-tight`          |
+| Section heading (H2) | `text-2xl sm:text-[1.75rem] font-semibold tracking-tight`    |
+| Sub-heading (H3)     | `text-lg font-semibold`                                      |
+| Body                 | `text-[15px] sm:text-base leading-relaxed`                   |
+| Secondary            | `text-[15px] text-text-secondary leading-relaxed`            |
+| Label / meta         | `font-mono text-xs uppercase tracking-wider text-text-muted` |
+| Nav link             | `text-sm text-text-secondary hover:text-text`                |
+
+Section headings end with a period on the about, projects and contact
+pages ("About Me.", "Projects.", "Contact."). Home section headings do not.
+
+## 3. Colour tokens
+
+Semantic layer, the only names components may use:
+
+```
+bg-deep   page edges / footer band
+bg        page background
+surface   cards, header when scrolled
+surface-2 hover backgrounds
+border-subtle  default 1px borders
+border-strong  inputs, emphasised dividers
+text      primary
+text-secondary
+text-muted
+brand     accent: links on hover, primary button, focus ring
+brand-soft 12% brand, for tinted backgrounds
+brand-ink text on a brand-filled surface
+selection ::selection background
+```
+
+### 3.1 Tokyo Night (default, dark)
+
+```css
+[data-theme="tokyo-night"] {
+  --t-bg-deep: #13141c;
+  --t-bg: #1a1b26;
+  --t-surface: #1f2230;
+  --t-surface-2: #292e42;
+  --t-border-subtle: #24283b;
+  --t-border-strong: #414868;
+  --t-text: #c0caf5;
+  --t-text-secondary: #a9b1d6;
+  --t-text-muted: #8b93b8;
+  --t-brand: #9ece6a;
+  --t-brand-soft: #9ece6a1f;
+  --t-brand-ink: #0c0e10;
+  --t-selection: #292e42;
+  color-scheme: dark;
+}
+```
+
+### 3.2 White (light)
+
+```css
+[data-theme="white"] {
+  --t-bg-deep: #f5f5f5;
+  --t-bg: #ffffff;
+  --t-surface: #ffffff;
+  --t-surface-2: #f5f5f5;
+  --t-border-subtle: #e8e8e8;
+  --t-border-strong: #c0c0c0;
+  --t-text: #000000;
+  --t-text-secondary: #383838;
+  --t-text-muted: #4a4a4a;
+  --t-brand: #6e6e6e;
+  --t-brand-soft: #6e6e6e1f;
+  --t-brand-ink: #ffffff;
+  --t-selection: #c0c0c0;
+  color-scheme: light;
+}
+```
+
+### 3.3 Mapping into Tailwind v4
+
+Tailwind v4 is configured in CSS, not `tailwind.config.js`. The semantic
+names become utilities through `@theme inline`, which keeps them live
+references to the `--t-*` variables so a theme switch is a single attribute
+change with no re-render:
+
+```css
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-bg-deep: var(--t-bg-deep);
+  --color-bg: var(--t-bg);
+  --color-surface: var(--t-surface);
+  --color-surface-2: var(--t-surface-2);
+  --color-border-subtle: var(--t-border-subtle);
+  --color-border-strong: var(--t-border-strong);
+  --color-text: var(--t-text);
+  --color-text-secondary: var(--t-text-secondary);
+  --color-text-muted: var(--t-text-muted);
+  --color-brand: var(--t-brand);
+  --color-brand-soft: var(--t-brand-soft);
+  --color-brand-ink: var(--t-brand-ink);
+
+  --radius-*: initial; /* no rounded corners anywhere */
+}
+```
+
+Usage is then plain Tailwind: `bg-bg text-text border-border-subtle
+hover:bg-surface-2`. Contrast: every `text-*` on every `bg-*` pair used must
+pass 4.5:1 in both themes. Tokyo Night `text-muted` on `bg` is the tightest
+pair (≈ 5.2:1); don't go lighter.
+
+Further themes (Catppuccin, Nord, Gruvbox…) are additional `[data-theme]`
+blocks and an entry in `lib/themes.ts`. Not in v1.
+
+## 4. Layout
+
+- **Measure:** `max-w-3xl` (48rem) for all reading content, centred,
+  `px-4 sm:px-6`.
+- **Header:** sticky, `h-14`, `max-w-3xl` inner, `bg-bg/90 backdrop-blur`
+  once scrolled past the hero. Left: `/` wordmark (home link, mono, brand
+  colour on hover). Right: Home · About · Projects · Contact · theme button
+  with a `kbd` showing `T`.
+- **Footer:** `border-t border-border-subtle`, `bg-bg-deep`. Name · © year ·
+  "Built with Next.js" · social links · location stamp `STOCKHOLM` in mono
+  uppercase.
+- **Section spacing:** `py-12 sm:py-16` between home sections; `space-y-4`
+  inside a list section.
+- **Borders over boxes.** A list item is `border-b border-border-subtle
+py-4`, not a card. Cards exist only for project screenshots, and are
+  `border border-border-subtle` with the image edge-to-edge.
+- **Mobile:** single column always. Header collapses to wordmark + theme
+  button + a text "Menu" toggle; no hamburger icon.
+
+## 5. Components
+
+| Component        | Purpose                                                                        |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `SiteHeader`     | Sticky nav, wordmark, theme button                                             |
+| `SiteFooter`     | As above                                                                       |
+| `SectionHeading` | H2 + optional one-line description + optional right-side action link           |
+| `ListSection`    | Heading + list of `ListItem`                                                   |
+| `ListItem`       | title (link) · meta (mono, right) · one paragraph · optional links             |
+| `ProjectRow`     | Home: name — one line — year                                                   |
+| `ProjectCard`    | Projects page: screenshot + name + stack tags + links                          |
+| `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
+| `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
+| `Kbd`            | Inline keyboard hint in mono                                                   |
+| `ExternalLink`   | `<a>` with `rel="noopener noreferrer"` and a trailing `↗`                      |
+
+Every component is a Server Component unless listed as client. Only
+`ThemeToggle` and the mobile menu toggle are client components.
+
+## 6. Pages
+
+### 6.1 Home `/`
+
+1. Eyebrow, mono: `Hi there, I'm`
+2. H1: name
+3. One line, secondary: `Full-stack developer in Stockholm — React,
+TypeScript, Node.js, PostgreSQL`
+4. Bio, 2–3 sentences, with inline links
+5. Actions: `Get in touch` (brand fill, square) · `About me →` (text link)
+6. `Selected projects` — 3–4 `ProjectRow`s, action link `All projects →`
+7. `Writing` — `ListItem`s with date right-aligned; hidden until 2 posts
+8. Footer
+
+No photo in v1 (`docs/06` Q2).
+
+### 6.2 About `/about`
+
+H1 `About Me.` then `ListSection`s, each ending in a period:
+
+- `Engineering.` / `Infrastructure.` / `Learning.` — three pillars, one
+  paragraph each, a link each (GitHub, swadestack-k8s, reading list)
+- `Experience.` — role · company · years · one paragraph
+- `Education.` — KTH, B.Sc. Computer Engineering
+- `Reading.` — books/courses with year, one line each
+- Closing CTA: `Continue to Projects →`
+
+### 6.3 Projects `/projects` and `/projects/[slug]`
+
+H1 `Projects.` List of `ProjectCard` (or `ProjectRow` until screenshots
+exist), newest first. Each: name, stack tags in mono, year, one paragraph,
+`Live ↗` · `Code ↗` · `Case study →` when one exists.
+
+Case study page: H1, meta line (year · stack · links), then MDX body with
+fixed headings in this order: **Problem · Architecture · Decisions · Results
+· What I'd change**. Closing CTA: `Continue to Contact →`.
+
+### 6.4 Contact `/contact`
+
+H1 `Contact.` One sentence. Email as a large mono link. `ListSection` of
+socials (GitHub, LinkedIn, …). Optional one-liner on freelance availability.
+
+### 6.5 404
+
+Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
+
+## 7. Interaction
+
+- Links: `underline-offset-4 decoration-border-strong hover:decoration-brand`
+  in prose; nav links have no underline, colour change only.
+- Focus: `focus-visible:outline-2 focus-visible:outline-offset-2
+focus-visible:outline-brand`. Never remove outlines.
+- Theme switch: `data-theme` on `<html>`, set before paint by an inline
+  script in `layout.tsx` (reads `localStorage`, falls back to
+  `prefers-color-scheme`). `T` cycles themes; the button does the same.
+  `transition-colors duration-150` on `body` only.
+- Motion respects `prefers-reduced-motion`. There is almost none to respect.
+
+## 8. Assets
+
+- Favicon: `/` glyph, generated as `app/icon.svg` (Next file convention).
+- Open Graph image: generated per route with `next/og` (`opengraph-image.tsx`),
+  Tokyo Night background, name + title in Geist, no photo.
+- Project screenshots: 1600×1000 WebP, under 150 kB each, in
+  `public/projects/<slug>.webp`, served through `next/image`.

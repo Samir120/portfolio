@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# portfolio
 
-First, run the development server:
+**Samir's personal site.** Next.js, self-hosted on k3s, deployed by Argo CD.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+[![CI](https://github.com/Samir120/portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/Samir120/portfolio/actions/workflows/ci.yml)
+[![Status](https://img.shields.io/badge/status-in_progress-yellow)](docs/06-roadmap.md)
+[![Next.js](https://img.shields.io/badge/Next.js-App_Router-000?logo=nextdotjs&logoColor=white)](https://nextjs.org/docs)
+[![License](https://img.shields.io/badge/code-MIT-blue)](#license)
+
+</div>
+
+<!-- Add once the domain exists:
+Live: https://TODO.swadestack.com
+-->
+
+> [!NOTE]
+> **In progress.** The specification in `docs/` is complete; the site is
+> being built milestone by milestone. See [Status](#status).
+
+**Contents** ·
+[What this is](#what-this-is) ·
+[Stack](#stack) ·
+[Design](#design) ·
+[Structure](#structure) ·
+[Develop](#develop) ·
+[Deploy](#deploy) ·
+[Status](#status) ·
+[Docs](#docs) ·
+[License](#license)
+
+## What this is
+
+A classic, minimal developer portfolio: who I am, what I've built, and the
+write-ups behind it. Five routes, no database, no CMS, every page
+prerendered. The repository is also part of the portfolio — the
+architecture, coding standards and release pipeline are written down in
+[`docs/`](docs/) and followed.
+
+## Stack
+
+| Layer     | Choice                                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Framework | Next.js (App Router, Server Components, Cache Components, `output: 'standalone'`)                                              |
+| Language  | TypeScript, strict                                                                                                             |
+| Styling   | Tailwind CSS v4, CSS custom-property themes                                                                                    |
+| Content   | MDX in `content/`, typed metadata, `@next/mdx`                                                                                 |
+| Fonts     | Geist + JetBrains Mono via `next/font`                                                                                         |
+| CI        | GitHub Actions — typecheck · lint · format · build                                                                             |
+| Image     | Docker multi-stage, `linux/arm64`, pushed to GHCR                                                                              |
+| Hosting   | k3s on a Raspberry Pi 5, Argo CD GitOps from [`swadestack-k8s`](https://github.com/Samir120/swadestack-k8s), Cloudflare tunnel |
+
+## Design
+
+Terminal-inspired and still: Geist and JetBrains Mono, no rounded corners,
+hairline borders, and themes named after terminal colour schemes. Tokyo
+Night is the default; press <kbd>T</kbd> to switch. Every colour is a
+semantic token, so a theme is one block of CSS variables. The full spec is
+[`docs/02-design-system.md`](docs/02-design-system.md).
+
+## Structure
+
+```
+app/          routes and Next.js file conventions only
+components/   shared UI, one component per file
+content/      MDX — projects, writing
+lib/          pure TypeScript — site facts, content loader, themes
+public/       images, CV
+docs/         specification and ADRs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Details and the rules that keep it this way:
+[`docs/03-architecture.md`](docs/03-architecture.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Develop
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Requires the Node version in `.node-version`.
 
-## Learn More
+```sh
+npm ci
+npm run dev        # http://localhost:3000
+npm run check      # typecheck + lint + format + build — run before every commit
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Push to `main` → CI gates → image `ghcr.io/samir120/portfolio:<sha>` →
+`newTag` bump in `swadestack-k8s` → Argo CD sync → live. Rollback is a
+`git revert` in the GitOps repo. The whole path is in
+[`docs/07-release-engineering.md`](docs/07-release-engineering.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Status
 
-## Deploy on Vercel
+Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
+**M1 — Scaffold and chrome.**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Docs
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+|                                                                                                                                                                                                       |                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [01 — Problem and scope](docs/01-problem-and-scope.md)                                                                                                                                                | why it exists, what v1 is and isn't     |
+| [02 — Design system](docs/02-design-system.md)                                                                                                                                                        | tokens, type, layout, pages             |
+| [03 — Architecture](docs/03-architecture.md)                                                                                                                                                          | layout, rendering, content pipeline     |
+| [04 — Coding standards](docs/04-coding-standards.md)                                                                                                                                                  | the rules                               |
+| [05 — Quality and testing](docs/05-quality-and-testing.md)                                                                                                                                            | gates and budgets                       |
+| [06 — Roadmap](docs/06-roadmap.md)                                                                                                                                                                    | milestones and tasks                    |
+| [07 — Release engineering](docs/07-release-engineering.md)                                                                                                                                            | CI, image, GitOps, Cloudflare           |
+| [ADR-0001](docs/adr/0001-standalone-output.md) · [ADR-0002](docs/adr/0002-mdx-content-in-repo.md) · [ADR-0003](docs/adr/0003-css-variable-theming.md) · [ADR-0004](docs/adr/0004-cache-components.md) | decisions and the alternatives rejected |
+
+## License
+
+Code is MIT. Written content, images and the CV under `content/` and
+`public/` are © Samir and not licensed for reuse.
