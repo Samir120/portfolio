@@ -13,7 +13,7 @@ type Site = {
 
 export const SITE = {
   name: "Samir",
-  role: "Developer",
+  role: "Full-stack developer in Stockholm — React, TypeScript, Node.js, PostgreSQL",
   location: "Stockholm",
   email: "samiralami132@gmail.com",
   socials: [
