@@ -46,6 +46,7 @@ portfolio/
 │   └── api/health/route.ts   # GET 200 for k8s probes (M4)
 ├── components/               # shared UI, flat; one component per file
 │   ├── site-header.tsx
+│   ├── mobile-menu.tsx       # 'use client'
 │   ├── site-footer.tsx
 │   ├── section-heading.tsx
 │   ├── list-section.tsx
@@ -115,8 +116,17 @@ prerendered has to be cached, deferred, or explicitly made request-time.
 | `sitemap.xml`, `robots.txt`            | Static                                | File conventions                   |
 
 All pages are Server Components. There is no `fetch()` anywhere. The two
-client components (`ThemeToggle`, mobile menu) receive no data; they only
-touch `document` and `localStorage`.
+client components (`ThemeToggle`, `MobileMenu`) receive no data: the first
+touches `document` and `localStorage`, the second holds the menu's open
+state.
+
+One value is cached: the copyright year in `SiteFooter`. A prerendered
+route may not read the clock, so the year comes from a `'use cache'`
+function with `cacheLife('max')`. The footer is in the root layout, so the
+build's route table lists every page with `Revalidate 30d` and `Expire 1y`.
+Pages are still prerendered; the server refreshes them in the background at
+most once every 30 days, which is also how the year rolls over without a
+deploy.
 
 `app/layout.tsx` exports `ensureStatic = 'navigation'`. On the root layout
 it covers every page and layout: `next build` and `next dev` fail if a

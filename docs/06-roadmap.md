@@ -28,8 +28,9 @@ tokens, CI. Nothing to read yet.
 - `app/globals.css` per `docs/02 §3`; `app/layout.tsx` with `next/font`,
   theme script, `suppressHydrationWarning`, and
   `export const ensureStatic = 'navigation'` (ADR-0004).
-- `components/site-header.tsx`, `site-footer.tsx`, `theme-toggle.tsx`,
-  `kbd.tsx`, `external-link.tsx`; `lib/themes.ts`, `lib/site.ts`.
+- `components/site-header.tsx`, `mobile-menu.tsx`, `site-footer.tsx`,
+  `theme-toggle.tsx`, `kbd.tsx`, `external-link.tsx`; `lib/themes.ts`,
+  `lib/site.ts`.
 - `app/not-found.tsx`.
 - Exit: both themes render, `T` toggles, no flash on reload, keyboard
   reachable, contrast verified. Build passes the `ensureStatic` validation.

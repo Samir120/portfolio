@@ -140,8 +140,9 @@ change with no re-render:
 
 Usage is then plain Tailwind: `bg-bg text-text border-border-subtle
 hover:bg-surface-2`. Contrast: every `text-*` on every `bg-*` pair used must
-pass 4.5:1 in both themes. Tokyo Night `text-muted` on `bg` is the tightest
-pair (≈ 5.2:1); don't go lighter.
+pass 4.5:1 in both themes. Tokyo Night `text-muted` measures 5.7:1 on `bg`,
+5.2:1 on `surface` and 4.45:1 on `surface-2`. The last one fails, so muted
+text never sits on a `surface-2` background; don't make the token lighter.
 
 Further themes (Catppuccin, Nord, Gruvbox…) are additional `[data-theme]`
 blocks and an entry in `lib/themes.ts`. Not in v1.
@@ -151,9 +152,9 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
 - **Measure:** `max-w-3xl` (48rem) for all reading content, centred,
   `px-4 sm:px-6`.
 - **Header:** sticky, `h-14`, `max-w-3xl` inner, `bg-bg/90 backdrop-blur`
-  once scrolled past the hero. Left: `/` wordmark (home link, mono, brand
-  colour on hover). Right: Home · About · Projects · Contact · theme button
-  with a `kbd` showing `T`.
+  at all times; it only shows once content scrolls under it. Left: `/`
+  wordmark (home link, mono, brand colour on hover). Right: Home · About ·
+  Projects · Contact · theme button with a `kbd` showing `T`.
 - **Footer:** `border-t border-border-subtle`, `bg-bg-deep`. Name · © year ·
   "Built with Next.js" · social links · location stamp `STOCKHOLM` in mono
   uppercase.
@@ -162,8 +163,9 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
 - **Borders over boxes.** A list item is `border-b border-border-subtle
 py-4`, not a card. Cards exist only for project screenshots, and are
   `border border-border-subtle` with the image edge-to-edge.
-- **Mobile:** single column always. Header collapses to wordmark + theme
-  button + a text "Menu" toggle; no hamburger icon.
+- **Mobile:** single column always. Below `sm` the header collapses to
+  wordmark + a text "Menu" toggle + theme button; no hamburger icon. The
+  toggle opens the same nav list in a panel under the header.
 
 ## 5. Components
 
@@ -178,11 +180,12 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 | `ProjectCard`    | Projects page: screenshot + name + stack tags + links                          |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
 | `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
+| `MobileMenu`     | Client component. "Menu" button below `sm`; shows the header's nav list.       |
 | `Kbd`            | Inline keyboard hint in mono                                                   |
 | `ExternalLink`   | `<a>` with `rel="noopener noreferrer"` and a trailing `↗`                      |
 
 Every component is a Server Component unless listed as client. Only
-`ThemeToggle` and the mobile menu toggle are client components.
+`ThemeToggle` and `MobileMenu` are client components.
 
 ## 6. Pages
 
@@ -234,8 +237,8 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
 
 - Links: `underline-offset-4 decoration-border-strong hover:decoration-brand`
   in prose; nav links have no underline, colour change only.
-- Focus: `focus-visible:outline-2 focus-visible:outline-offset-2
-focus-visible:outline-brand`. Never remove outlines.
+- Focus: a 2px `brand` outline with a 2px offset on `:focus-visible`, set
+  once as a base rule in `globals.css`. Never remove outlines.
 - Theme switch: `data-theme` on `<html>`, set before paint by an inline
   script in `layout.tsx` (reads `localStorage`, falls back to
   `prefers-color-scheme`). `T` cycles themes; the button does the same.
