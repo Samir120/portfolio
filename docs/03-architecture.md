@@ -19,8 +19,8 @@ Consequences:
   The image for commit `abc123` behaves identically everywhere.
 - The content pipeline is the architecture. Get `content/` → typed metadata →
   pages right, and the rest is layout.
-- Performance is a build-time property. Measure it with `next analyze` and
-  Lighthouse, not with APM.
+- Performance is a build-time property. Measure it from the build output
+  (`docs/05 §2`) and with Lighthouse, not with APM.
 
 ## 2. Repository layout
 
@@ -53,6 +53,9 @@ portfolio/
 │   ├── list-item.tsx
 │   ├── project-row.tsx
 │   ├── project-card.tsx
+│   ├── bio.tsx
+│   ├── figure.tsx
+│   ├── figure-grid.tsx
 │   ├── prose.tsx
 │   ├── theme-toggle.tsx      # 'use client'
 │   ├── kbd.tsx
@@ -63,12 +66,13 @@ portfolio/
 │   │   └── …
 │   └── writing/
 ├── lib/                      # pure TS, no React
-│   ├── site.ts               # name, title, bio links, socials, location
+│   ├── site.ts               # name, role, socials, location, email
 │   ├── content.ts            # readdir + import + validate; the only fs user
 │   ├── themes.ts             # theme ids and labels
 │   └── types.ts              # ProjectMeta, PostMeta
 ├── public/
 │   ├── projects/*.webp
+│   ├── figures/*.webp
 │   └── cv.pdf
 ├── docs/                     # these documents, public
 ├── .github/workflows/ci.yml
@@ -193,11 +197,15 @@ app/projects/[slug]/page.tsx
 
 ## 6. Data flow for `lib/site.ts`
 
-One file holds every fact about the person: name, role line, bio paragraphs
-(as JSX-free strings with a small link syntax, or as a Server Component —
-decide at T3), socials, location, email, CV path. Every page imports from it.
-Changing the role line is a one-line change in one file. Nothing in `app/`
-contains a hard-coded personal fact.
+One file holds every fact about the person: name, role line, socials,
+location, email, CV path. Every page imports from it. Changing the role
+line is a one-line change in one file. Nothing in `app/` contains a
+hard-coded personal fact.
+
+The bio is the one exception to "one file". It is prose with inline links,
+so it is written as JSX in a Server Component (`components/bio.tsx`)
+instead of as strings in `lib/site.ts` that would need a parser. `lib/`
+stays free of React.
 
 ## 7. What is deliberately absent
 

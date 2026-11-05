@@ -28,7 +28,7 @@ list-based about, projects and contact pages. This document is the spec;
 Both are exposed as CSS variables from `app/layout.tsx` (`variable:
 '--font-sans'` / `'--font-mono'`) and mapped in Tailwind as `font-sans` and
 `font-mono`. Mono is used for: eyebrow labels, dates, stack tags, `kbd`
-hints, the footer location stamp, and code.
+hints, figure meta lines, the footer location stamp, and code.
 
 Scale (Tailwind classes; nothing custom):
 
@@ -162,7 +162,8 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
   inside a list section.
 - **Borders over boxes.** A list item is `border-b border-border-subtle
 py-4`, not a card. Cards exist only for project screenshots, and are
-  `border border-border-subtle` with the image edge-to-edge.
+  `border border-border-subtle` with the image edge-to-edge. Photos use
+  `Figure` (§5.1), which follows the same rule.
 - **Mobile:** single column always. Below `sm` the header collapses to
   wordmark + a text "Menu" toggle + theme button; no hamburger icon. The
   toggle opens the same nav list in a panel under the header.
@@ -177,8 +178,11 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 | `ListSection`    | Heading + list of `ListItem`                                                   |
 | `ListItem`       | title (link) · meta (mono, right) · one paragraph · optional links             |
 | `ProjectRow`     | Home: name — one line — year                                                   |
+| `Bio`            | Home: the short bio, 2–3 sentences with inline links, written as JSX           |
 | `ProjectCard`    | Projects page: screenshot + name + stack tags + links                          |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
+| `Figure`         | Photo or screenshot in a hairline border with a mono meta line below (§5.1)    |
+| `FigureGrid`     | Two or three `Figure`s in a row, separated by a hairline (§5.1)                |
 | `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
 | `MobileMenu`     | Client component. "Menu" button below `sm`; shows the header's nav list.       |
 | `Kbd`            | Inline keyboard hint in mono                                                   |
@@ -186,6 +190,33 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 
 Every component is a Server Component unless listed as client. Only
 `ThemeToggle` and `MobileMenu` are client components.
+
+### 5.1 Figures
+
+Photos are shown as labelled figures, built from the same tokens as
+everything else.
+
+- **`Figure`:** `next/image` with hard corners inside
+  `border border-border-subtle`, the image edge-to-edge inside the border.
+  Below it sits one meta line in the label style of §2, left-aligned, for
+  example `STOCKHOLM · 2024`, with an optional right-aligned index such as
+  `01`. No captions in prose, no shadows, no radius, no hover effects.
+- **`FigureGrid`:** two or three `Figure`s in a row with
+  `gap-px bg-border-subtle`, so the images are separated by a single
+  hairline, like panes in a tiled window. Each cell is `bg-bg`, which is
+  what leaves only the 1px gap showing. One column on mobile. Heights are
+  equal because a grid has one fixed aspect ratio (`aspect-[3/2]` by
+  default, `aspect-square` as the option) and its images are
+  `object-cover`.
+- **Treatment:** a uniform `saturate-[.85]`, so photos from different years
+  and cameras sit together in both themes. Tokyo Night may add
+  `brightness-[.95]`. No grayscale and no colour on hover; the site stays
+  still.
+- **Rhythm:** at most one `Figure` or `FigureGrid` per section, never two
+  in a row, never above the H1 and never in the home hero. A figure never
+  exceeds the `max-w-3xl` measure.
+- **MDX:** both are mapped in `mdx-components.tsx`, so case studies use the
+  same components.
 
 ## 6. Pages
 
@@ -201,11 +232,16 @@ TypeScript, Node.js, PostgreSQL`
 7. `Writing` — `ListItem`s with date right-aligned; hidden until 2 posts
 8. Footer
 
-No photo in v1 (`docs/06` Q2).
+The hero is text-only: no photo anywhere on the home page (`docs/06` Q2).
+The bio here stays at 2–3 sentences; the long bio is on the about page.
 
 ### 6.2 About `/about`
 
-H1 `About Me.` then `ListSection`s, each ending in a period:
+H1 `About Me.` then the long bio: an unheaded block of two to four
+paragraphs directly under the H1. One `FigureGrid` may sit inside it, after
+the first or second paragraph and nowhere else in the block.
+
+Then `ListSection`s, each ending in a period:
 
 - `Engineering.` / `Infrastructure.` / `Learning.` — three pillars, one
   paragraph each, a link each (GitHub, swadestack-k8s, reading list)
@@ -213,6 +249,9 @@ H1 `About Me.` then `ListSection`s, each ending in a period:
 - `Education.` — KTH, B.Sc. Computer Engineering
 - `Reading.` — books/courses with year, one line each
 - Closing CTA: `Continue to Projects →`
+
+Photos appear on this page only as `Figure` or `FigureGrid`, under the
+rhythm rule in §5.1.
 
 ### 6.3 Projects `/projects` and `/projects/[slug]`
 
@@ -252,3 +291,7 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
   Tokyo Night background, name + title in Geist, no photo.
 - Project screenshots: 1600×1000 WebP, under 150 kB each, in
   `public/projects/<slug>.webp`, served through `next/image`.
+- Photos: WebP, at most 100 kB each, in `public/figures/`, served through
+  `next/image` with explicit `width` and `height`, a `sizes` value, and
+  lazy loading (the `next/image` default). Until the real photos exist,
+  placeholder files stand in and their meta lines read `TODO:`.

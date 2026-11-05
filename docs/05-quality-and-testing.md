@@ -53,14 +53,29 @@ Measured on `/` and on `/projects/swadestack`, mobile profile.
 | Lighthouse Accessibility  | ≥ 95 (target 100)                    |
 | Lighthouse Best Practices | ≥ 95                                 |
 | Lighthouse SEO            | ≥ 95                                 |
-| First-load JS, `/`        | < 100 kB gzipped                     |
+| First-load JS, `/`        | < 150 kB gzipped                     |
 | Largest image             | < 150 kB                             |
 | Fonts                     | 2 families, variable, subset `latin` |
 
-`next build` no longer prints bundle sizes (removed in Next 16). Until the
-Lighthouse job exists, check the JS budget with `npx next analyze` when a
-task touches anything client-side; it reports per-route bundle composition
-without producing a build.
+The JS budget is a ceiling on the whole first load, most of which is the
+framework. At Next.js 16.4.5 the runtime alone is 138.4 kB gzipped,
+measured with both client components removed; the two client components
+add 0.9 kB. The ceiling leaves about 11 kB for the site's own client code
+and is re-baselined when Next.js is upgraded.
+
+`next build` no longer prints bundle sizes (removed in Next 16), but it
+writes the first-load chunks of every route to
+`.next/diagnostics/route-bundle-stats.json`. After a build, this prints the
+gzipped total per route:
+
+```
+node -e 'const z=require("zlib"),fs=require("fs");for(const r of require("./.next/diagnostics/route-bundle-stats.json")){const b=r.firstLoadChunkPaths.reduce((t,p)=>t+z.gzipSync(fs.readFileSync(p)).length,0);console.log(r.route,(b/1000).toFixed(1)+" kB gzipped")}'
+```
+
+Run it when a task touches anything client-side, until the Lighthouse job
+exists. The stats file is a build diagnostic, not a documented interface;
+if it moves, `npx next analyze` shows the same chunks, and what is inside
+them, in an interactive view.
 
 ## 3. Build-time checks that matter most
 

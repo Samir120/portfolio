@@ -76,8 +76,8 @@ operated with the keyboard alone.
 
 - Lighthouse (mobile) ≥ 95 in Performance, Accessibility, Best Practices and
   SEO on `/` and one `/projects/[slug]` page.
-- First-load JavaScript for `/` under 100 kB gzipped, as reported by
-  `next analyze`.
+- First-load JavaScript for `/` under 150 kB gzipped, measured as
+  `docs/05 §2` describes.
 - Zero ESLint, TypeScript and Prettier findings on `main`. CI green.
 - Container image under 200 MB. Pod runs within a 128 Mi memory limit
   without OOM.

@@ -38,9 +38,9 @@ tokens, CI. Nothing to read yet.
 ### T3 — Home page
 
 - `app/page.tsx` composed from `components/section-heading.tsx`,
-  `project-row.tsx`, `list-item.tsx`; data from `lib/site.ts` and a
-  temporary `lib/projects.ts` array (replaced in T4).
-- Decide Q2 (photo) — default no.
+  `project-row.tsx`, `bio.tsx`; data from `lib/site.ts` and a temporary
+  `lib/projects.ts` array (replaced in T4).
+- Decide Q2 (photo).
 - Exit: home matches `docs/02 §6.1` with `TODO:` copy. First-load JS under
   budget.
 
@@ -69,12 +69,16 @@ Goal: the real pages, with the real pipeline.
   `@tailwindcss/typography` mapped to tokens.
 - `content/projects/swadestack.mdx` written in full: Problem, Architecture,
   Decisions, Results, What I'd change. Screenshot in `public/projects/`.
+- `components/figure.tsx` per `docs/02 §5.1`, mapped in
+  `mdx-components.tsx`; the case study's screenshot is its first use.
 - Exit: `/projects/swadestack` static, readable, under budget.
 
 ### T6 — About page
 
-- `app/about/page.tsx`, `components/list-section.tsx`; sections per
-  `docs/02 §6.2`.
+- `app/about/page.tsx`, `components/list-section.tsx`, `list-item.tsx`;
+  long bio and sections per `docs/02 §6.2`.
+- `components/figure-grid.tsx` per `docs/02 §5.1`, mapped in
+  `mdx-components.tsx`; placeholder photos in `public/figures/`.
 - Exit: all sections present; copy may be `TODO:` except Experience and
   Education.
 
@@ -194,7 +198,9 @@ changes a rule, in an ADR.
 - **Q1 Subdomain.** `samir.swadestack.com` (default) vs
   `portfolio.swadestack.com` vs a `www`-style separate zone. Decide before
   T12; affects nothing before that.
-- **Q2 Photo in hero.** Default: no photo in v1. Decide at T3.
+- **Q2 Photo in hero.** No photo in the hero or anywhere on the home page.
+  Photos appear on the about page as labelled figures (`docs/02 §5.1`).
+  Closed at T3.
 - **Q3 Home projects: cards with screenshots or text rows.** Default: text
   rows until screenshots exist, then revisit. Decide at T4.
 - **Q4 Writing section.** Ship hidden until two posts exist. Decide at T10.
