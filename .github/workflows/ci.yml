@@ -57,4 +57,4 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          NEXT_PUBLIC_SITE_URL: https://TODO.swadestack.com # STATE Q1
+          NEXT_PUBLIC_SITE_URL: https://TODO.swadestack.com # docs/06 Q1   (same wording as docs/07 §3)
