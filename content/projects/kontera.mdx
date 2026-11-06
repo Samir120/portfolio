@@ -1,0 +1,139 @@
+export const meta = {
+  title: "Kontera",
+  summary:
+    "Rust library that turns e-commerce events into balanced Swedish bookkeeping verifications with SIE 4I export. In progress.",
+  year: 2026,
+  stack: ["Rust"],
+  links: {
+    code: "https://github.com/Samir120/kontera",
+  },
+  featured: true,
+};
+
+## Problem
+
+A Swedish webshop takes 40 orders on a Monday: 50,000 kr including 25% VAT.
+Two customers return goods worth 1,000 kr, and the payment provider charges
+1,168 kr in fees. On Thursday one line appears on the bank statement:
+47,832 kr.
+
+That number is all the bank knows about Monday. The bookkeeping behind it is
+ten postings on five accounts, and afterwards the receivable account for the
+payment provider has to be exactly zero. The usual mistake is to book the
+payout as revenue. Then the fees vanish, the VAT is wrong, and sales are
+dated when the money arrived instead of when they happened. Nothing checks
+that `payout = sales - refunds - fees`, so the errors pile up until someone
+reconciles by hand at year-end.
+
+Merchants can buy this from an accounting system and a connector. Someone
+building a shop platform cannot: there are ledger libraries that know nothing
+about Swedish VAT, the BAS chart of accounts or SIE files, and there are
+closed systems that know all of it. Kontera is the missing library. It is
+for platform builders, not merchants, and it is not an accounting program.
+
+## Architecture
+
+The core is one pure function. It takes the shop's event log and a
+configuration, and returns a ledger or an error.
+
+```text
+events (JSON) + config (TOML)
+  -> parse at the boundary into validated types
+  -> rules:  one balanced verification per event
+  -> settle: payout = sales - refunds - fees, or an error carrying the difference
+  -> ledger -> SIE 4I file, VAT report, settlement summary
+```
+
+There are four event types: a sale captured, a refund issued, a fee charged
+and a payout settled. The configuration maps each role, such as bank, sales
+or VAT payable, to a BAS account. The parsing stage exists today. The later
+stages are specified and not yet written.
+
+The workspace has five crates. `kontera-core` holds the types and the
+function. `kontera-sie` writes the SIE 4I file. `kontera-cli` and
+`kontera-wasm` are thin shells around those two, one for the command line
+and one for an npm package. `kontera-testkit` holds the generators the
+property tests share and is never published.
+
+## Decisions
+
+**The core is a pure function, not a service.** The host platform already
+stores its orders. A bookkeeping service with its own database would be a
+second source of truth, with drift between the two to reconcile. So the core
+does no I/O, holds no state and reads no clock: dates are parameters. A
+script in CI fails the build on a clock read, file or network access,
+`async` or `unsafe` in the pure crates. The price is full recomputation on
+every run, which does not matter at thousands of events a day.
+
+**An unbalanced verification cannot be constructed.** `BalancedTransaction`
+has a private field and one constructor, which returns an error unless the
+lines are non-empty and sum to exactly zero. Holding one is the proof, so
+nothing downstream checks again. A posting rule that gets its arithmetic
+wrong fails where the lines are built, not when the file is exported.
+
+**Money is exact.** Amounts are decimals in öre and never floats. In the
+event schema they are JSON strings, because the first host is a Node
+application and `JSON.parse` turns `1000.10` into a float. Rounding is half
+away from zero, applied per line and then summed, because that is what the
+checkout charged. Input that would need rounding is rejected; only one
+function in the crate is allowed to round.
+
+**Fail closed.** Version 0.1 covers four VAT scenarios: Swedish domestic, EU
+business with reverse charge, EU consumer under OSS, and export. Anything
+else returns a typed gap, not a guess, so the host can tell the merchant
+which orders need manual handling. A payout that does not add up returns the
+difference, never a posting with a rounding plug.
+
+**SIE 4I, as CP437 bytes.** 4I is the variant for a subsystem that hands
+verifications to someone else's ledger, which is this library's role. The
+format uses the MS-DOS code page 437, so the writer returns bytes, not a
+string, and a character that cannot be encoded is an error instead of a
+question mark.
+
+**The event schema has its own version.** Hosts must keep their event logs
+for seven years under Swedish bookkeeping law, while the library will change
+many times in that period. The schema version is therefore separate from the
+crate version, and the rule is that the parser accepts the current version
+and the one before it.
+
+## Results
+
+Kontera is unfinished, and nothing is published. As of November 2026:
+
+- The specification is written: eight documents and six decision records.
+- The first milestone's exit criterion has its property test: over
+  generated sets of lines, an unbalanced set never becomes a verification.
+  The test recomputes every sum independently in integer öre.
+- The domain types exist with their tests: money, BAS account numbers and
+  classes, VAT percentages, verifications, and the error type.
+- Event schema version 1 parses the four events strictly. Unknown fields
+  are rejected.
+- The configuration parses and checks every mapped account against the BAS
+  class its role needs.
+- A generator produces consistent, fully settled event logs for the
+  property tests to come, and is tested itself. Its product names include
+  å, ä and ö on purpose, so the SIE encoder will meet them from its first
+  test.
+- CI runs formatting, Clippy with warnings as errors, the tests, the purity
+  script and a build on the minimum supported Rust version.
+
+Not written yet: the posting rules, settlement reconciliation, the SIE
+writer, the command-line tool and the WebAssembly package.
+
+## What I'd change
+
+- **Test the import first.** The project fails if a commercial Swedish
+  accounting system refuses the SIE file, and that is still untested. A
+  short file written by hand and imported into a trial account would have
+  answered the question in the first week, before any types existed.
+- **Budget for the types.** The roadmap gave ten weeks to five milestones.
+  Nine weeks in, the first is done and the second has started. The
+  validated types and the generator were the expensive part, and the plan
+  did not price them.
+- **See an accountant earlier.** The default account mapping is marked as
+  unverified until one has reviewed it, and it has already needed
+  corrections. That review should come before the configuration types, not
+  after them.
+- **Partial results.** One unsupported order fails the whole batch. That is
+  the right first guarantee, but a host will want the valid postings along
+  with a list of what was refused.

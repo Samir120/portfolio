@@ -1,0 +1,147 @@
+export const meta = {
+  title: "SwadeStack",
+  summary:
+    "Self-hosted e-commerce platform for PC components with compatibility checks, Klarna checkout, 2FA, and English/Swedish support.",
+  year: 2026,
+  stack: ["React", "TypeScript", "Node.js", "PostgreSQL"],
+  links: {
+    live: "https://swadestack.com",
+    code: "https://github.com/Samir120/swadestack",
+  },
+  featured: true,
+  order: 1,
+};
+
+## Problem
+
+SwadeStack sells PC components and lets a customer assemble a complete
+machine in a builder. Two things make that harder than an ordinary catalogue.
+
+The first is that a build is only worth selling if the parts fit together. A
+CPU needs a motherboard with the same socket, a graphics card has to clear
+the case, and the power supply has to cover everything else. A customer
+cannot be expected to know all of that, so the shop has to.
+
+The second is that it had to work as a real shop run by one person: VAT,
+Klarna at checkout, English and Swedish throughout, invoices, order emails,
+and an admin panel for everything that changes. I also wanted to host it
+myself, without turning every deploy into a manual job.
+
+## Architecture
+
+The frontend is a React and TypeScript single-page app built with Vite. State
+lives in Redux Toolkit, and every string comes from i18next, with 447 keys in
+each of the two languages. nginx serves it as static files.
+
+The backend is an Express API in TypeScript on PostgreSQL 16. It is layered:
+routes, controllers, services, repositories, Sequelize models. The parts that
+carry the most weight are:
+
+- **Compatibility.** One service validates a whole build and estimates its
+  power draw.
+- **Checkout.** The server creates the Klarna Checkout order, and Klarna's
+  push notification is what confirms it.
+- **Accounts.** Access tokens live for 15 minutes, refresh tokens rotate,
+  two-factor login uses TOTP with the secret encrypted at rest, and login and
+  registration are rate limited.
+- **Money.** Exchange rates between the base currency and the display
+  currency are fetched from an external API and cached in the database, so
+  prices are converted from stored rates.
+
+Both halves ship as container images to a single-node k3s cluster. Traefik
+routes `/api` and `/uploads` to the backend and everything else to the
+frontend. The cluster has no inbound ports open: two `cloudflared` replicas
+connect out to Cloudflare, which forwards requests to Traefik. Argo CD keeps
+the cluster in sync with a separate GitOps repository, secrets are stored
+there as Sealed Secrets, and Prometheus, Grafana and Alertmanager watch the
+result.
+
+```text
+push to main      -> GitHub Actions: lint, build, push images tagged with the commit SHA
+                  -> commit the SHA to the staging overlay -> Argo CD -> staging
+manual promotion  -> copy the SHA staging runs to the production overlay
+                  -> Argo CD -> production
+```
+
+## Decisions
+
+**Compatibility is decided on the server, one relationship at a time.** The
+validator takes the whole build and runs one check per pair: CPU and
+motherboard socket, memory type and slot count, graphics card slots and case
+clearance, NVMe and SATA ports (which SSDs and hard drives share), fan
+mounts, drive bays, cooler support, and power. Each check returns an error
+or a warning with a message in both languages. The power check adds up CPU
+and GPU TDP plus a fixed allowance for each memory module, drive and fan. A
+supply below that total is an error, and one with less than 20% headroom is
+a warning. The builder shows the verdict, but it does not make it, so a
+saved configuration is validated again every time it changes.
+
+**Migrations, not `sync`.** Until August 2026 the backend called Sequelize's
+`sync({ alter: true })` at every boot. That changed the production schema
+with no record of it, and on each restart it added another copy of every
+unique constraint. Now `sync` runs in development only. In production the
+schema changes only through migrations, and they run as an Argo CD sync hook
+before the new backend starts. Getting there took two extra migrations: a
+baseline generated from the live schema, because the original migrations
+assumed tables that nothing had ever created, and a reconciliation that
+replays the undocumented drift as idempotent SQL. Against production every
+statement in it is a no-op. It is deliberately not reversible.
+
+**Refresh tokens rotate, and revoked ones are kept until they expire.**
+Every refresh revokes the old token and issues a new one. Revoked rows stay
+in the table on purpose, because they are what lets a replayed token be
+recognised. Expired rows are removed by a daily sweep that runs outside the
+request path, so a login never pays for a table-wide delete.
+
+**Build once, promote the same image.** Every push to `main` builds both
+images, tags them with the commit SHA and deploys them to staging.
+Production is a manual workflow that reads the SHA staging is running and
+writes that same SHA into the production overlay. What was tested is what
+ships, and nothing is rebuilt in between. Every workflow that writes to the
+GitOps repository shares one concurrency lock, rebases before pushing, and
+stops on a conflict instead of forcing.
+
+**Load the home page eagerly.** Sections of the home page were lazy-loaded
+and icons were imported at runtime. In practice that meant jank while
+scrolling and content that flickered in. I removed the lazy wrapper, replaced
+the runtime icon imports with a generated static set, and gave the remaining
+asynchronous content skeletons that reserve its space.
+
+## Results
+
+- Version 1.0 went out in February 2026. In August the site moved from a
+  PM2 process to the cluster, with one planned maintenance window for the
+  data migration.
+- By September the GitOps history held 12 staging deploys and 6 production
+  promotions. A production rollback and the restore that followed were one
+  commit each.
+- A fresh database now builds from migrations alone: a baseline of 29
+  tables, the 13 original migrations, and the reconciliation. Before the
+  baseline existed, the first migration failed on an empty database.
+- The `sync` audit found more than 1,500 duplicate unique constraints
+  across seven tables, each one a real index maintained on every write.
+- Every night the database is dumped and the uploads volume is archived.
+  Each archive is verified by reading it back, and both are kept for 14
+  days.
+- Alerts fire when the site has been unreachable for two minutes, when
+  PostgreSQL is down, when a volume is filling up, when the certificate is
+  within 14 days of expiry, and when a backup is stale or has never
+  succeeded.
+
+## What I'd change
+
+- **Tests before features.** There are none. CI gates on lint and build
+  only. I would start with the compatibility validator, because it is nearly
+  pure logic and a wrong answer there sells a machine that does not work.
+- **Rules as data.** The checks are written out in one service of about
+  1,300 lines. A rules table already exists in the schema, and the validator
+  does not read it yet. Moving the checks there would let a new constraint
+  be a row instead of a deploy.
+- **Backups that leave the machine.** The backup volume sits on the same
+  node as the database, so a dead disk takes both. They should be copied to
+  object storage somewhere else.
+- **A scheduler for the token sweep.** It is a timer inside the backend
+  process. That is fine for one replica and wrong for two; it belongs in a
+  CronJob.
+- **Pinned infrastructure images.** `cloudflared` runs on the `latest` tag,
+  so an upstream release can change production without a commit.

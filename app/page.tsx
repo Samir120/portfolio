@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Bio } from "@/components/bio";
 import { ProjectRow } from "@/components/project-row";
 import { SectionHeading } from "@/components/section-heading";
-import { PROJECTS } from "@/lib/projects";
+import { listProjects } from "@/lib/content";
 import { SITE } from "@/lib/site";
 
-export default function Home() {
+export default async function Home() {
+  const projects = await listProjects({ featured: true });
+
   return (
     <>
       <section className="py-12 sm:py-16">
@@ -43,13 +45,13 @@ export default function Home() {
           action={{ href: "/projects", label: "All projects" }}
         />
         <ul className="mt-6 border-t border-border-subtle">
-          {PROJECTS.map((project) => (
+          {projects.map(({ slug, meta }) => (
             <ProjectRow
-              key={project.slug}
-              href={`/projects/${project.slug}`}
-              title={project.title}
-              summary={project.summary}
-              year={project.year}
+              key={slug}
+              href={`/projects/${slug}`}
+              title={meta.title}
+              summary={meta.summary}
+              year={meta.year}
             />
           ))}
         </ul>

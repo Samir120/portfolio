@@ -1,0 +1,91 @@
+export const meta = {
+  title: "Leta",
+  summary:
+    "Typo-tolerant, search-as-you-type product search server in C++20. Specification complete, implementation in progress.",
+  year: 2026,
+  stack: ["C++20", "CMake", "cpp-httplib", "simdjson"],
+  links: {
+    code: "https://github.com/Samir120/leta",
+  },
+  featured: true,
+};
+
+## Overview
+
+Leta is a small, self-hosted search server for product catalogs. It indexes JSON documents and answers typo-tolerant, search-as-you-type queries over a plain HTTP/JSON API, in the same category as Meilisearch and Typesense.
+
+It sits next to your database, not in place of it. Documents live in the system of record, and Leta's index is derived from them and can always be rebuilt. Its first production workload will be the product search for [swadestack.com](https://swadestack.com).
+
+## Status
+
+**Pre-alpha.** The full specification set is written and the repository scaffolding is in place. Product code begins at milestone M1, and progress is tracked milestone by milestone in the roadmap and changelog.
+
+Everything below describes the target design.
+
+## What it will do
+
+```bash
+curl -X POST localhost:7700/indexes/products/search \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"q":"corsiar ddr","limit":3}'
+```
+
+- `corsiar` matches **Corsair** with one typo
+- `ddr` matches **DDR5** as a prefix, because the last term is treated as still being typed
+- Swedish and English diacritics fold, so `skarm` finds **Skärm**
+
+The API is defined up front as an OpenAPI 3.1 contract, with a guide showing how to keep the index in sync with a PostgreSQL source of truth.
+
+## Why build it
+
+- **Small enough to understand.** One binary, one data directory, one config file.
+- **Self-hosted.** No per-query cost, and no data leaving your network.
+- **Built from first principles.** The inverted index, postings compression, typo tolerance, and ranking are implemented directly rather than wrapped from a library, and each structural choice is documented.
+
+## Architecture
+
+Leta follows a ports-and-adapters design, with dependencies pointing inward only:
+
+- `src/core` is the pure domain: tokenizer, index, postings, ranker, and typo automaton. It depends on nothing but the C++ standard library.
+- `src/application` orchestrates the core and owns the interfaces for storage and HTTP.
+- `src/adapters` contains the replaceable I/O layers: HTTP, storage, config, and metrics.
+
+The rule isn't just a convention. A CI job fails the build if `src/core` ever links a third-party dependency.
+
+## Design targets
+
+For a 100,000-document catalog on a 4-vCPU host:
+
+| Metric                          | Target                                          |
+| ------------------------------- | ----------------------------------------------- |
+| Search latency, p50 / p99       | 2 ms / 10 ms at 50 concurrent clients           |
+| Search during concurrent ingest | No p99 degradation; reads never block on writes |
+| Indexing throughput             | ≥ 5,000 documents/s                             |
+| Startup restore                 | ≤ 15 s                                          |
+| Single-core search throughput   | ≥ 2,000 queries/s                               |
+
+These are targets, not measurements. Benchmarks will be published with machine details and a committed dataset so they can be reproduced.
+
+## Scope
+
+v1 deliberately leaves out filtering, faceting, sorting, synonyms, stemming, replication, vector search, and an admin UI. Leta is also designed to run behind a backend, not exposed directly to the internet. Keeping the scope binding is what makes the rest achievable for a solo project.
+
+## How it's being built
+
+Leta is an exercise in doing a small systems project properly:
+
+- **Specifications before code**: project brief, requirements, API contract, architecture, roadmap, quality strategy, and coding standards, all written first
+- **Architecture Decision Records** for every structural choice, including the alternatives considered
+- **Requirement IDs traced to tests**, with a CI check for coverage
+- **Modern CMake** with presets, and Linux-only builds; other platforms run the container
+- **Planned quality gates**: unit, integration, contract, recovery, relevance, fuzz, and benchmark tests
+
+Implementation is drafted with an AI pair and reviewed, built, and accepted by me. Every design and acceptance decision is mine.
+
+## What I'm learning
+
+**Design is cheaper on paper.** Writing the requirements and ADRs first forced decisions about concurrency, persistence, and scope before any of them could become expensive to change.
+
+**Architecture can be enforced, not just described.** Turning the layering rule into a CI check means the design stays true as the code grows.
+
+**Modern C++ and CMake are their own discipline.** Structuring the build with presets, modules, and checks has been as much of the work as the search engine itself.
