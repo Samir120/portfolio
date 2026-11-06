@@ -93,20 +93,20 @@ Push to `main` → CI gates → image `ghcr.io/samir120/portfolio:<sha>` →
 ## Status
 
 Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
-**M1 — Scaffold and chrome.**
+**M2 — Content.**
 
 ## Docs
 
-|                                                                                                                                                                                                       |                                         |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [01 — Problem and scope](docs/01-problem-and-scope.md)                                                                                                                                                | why it exists, what v1 is and isn't     |
-| [02 — Design system](docs/02-design-system.md)                                                                                                                                                        | tokens, type, layout, pages             |
-| [03 — Architecture](docs/03-architecture.md)                                                                                                                                                          | layout, rendering, content pipeline     |
-| [04 — Coding standards](docs/04-coding-standards.md)                                                                                                                                                  | the rules                               |
-| [05 — Quality and testing](docs/05-quality-and-testing.md)                                                                                                                                            | gates and budgets                       |
-| [06 — Roadmap](docs/06-roadmap.md)                                                                                                                                                                    | milestones and tasks                    |
-| [07 — Release engineering](docs/07-release-engineering.md)                                                                                                                                            | CI, image, GitOps, Cloudflare           |
-| [ADR-0001](docs/adr/0001-standalone-output.md) · [ADR-0002](docs/adr/0002-mdx-content-in-repo.md) · [ADR-0003](docs/adr/0003-css-variable-theming.md) · [ADR-0004](docs/adr/0004-cache-components.md) | decisions and the alternatives rejected |
+|                                                                                                                                                                                                                                                                  |                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [01 — Problem and scope](docs/01-problem-and-scope.md)                                                                                                                                                                                                           | why it exists, what v1 is and isn't     |
+| [02 — Design system](docs/02-design-system.md)                                                                                                                                                                                                                   | tokens, type, layout, pages             |
+| [03 — Architecture](docs/03-architecture.md)                                                                                                                                                                                                                     | layout, rendering, content pipeline     |
+| [04 — Coding standards](docs/04-coding-standards.md)                                                                                                                                                                                                             | the rules                               |
+| [05 — Quality and testing](docs/05-quality-and-testing.md)                                                                                                                                                                                                       | gates and budgets                       |
+| [06 — Roadmap](docs/06-roadmap.md)                                                                                                                                                                                                                               | milestones and tasks                    |
+| [07 — Release engineering](docs/07-release-engineering.md)                                                                                                                                                                                                       | CI, image, GitOps, Cloudflare           |
+| [ADR-0001](docs/adr/0001-standalone-output.md) · [ADR-0002](docs/adr/0002-mdx-content-in-repo.md) · [ADR-0003](docs/adr/0003-css-variable-theming.md) · [ADR-0004](docs/adr/0004-cache-components.md) · [ADR-0005](docs/adr/0005-mdx-meta-validated-at-build.md) | decisions and the alternatives rejected |
 
 ## License
 

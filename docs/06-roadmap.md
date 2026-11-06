@@ -71,6 +71,7 @@ Goal: the real pages, with the real pipeline.
   Decisions, Results, What I'd change. Screenshot in `public/projects/`.
 - `components/figure.tsx` per `docs/02 §5.1`, mapped in
   `mdx-components.tsx`; the case study's screenshot is its first use.
+- `ProjectCard` gains its screenshot and card border (`docs/02 §6.3`).
 - Exit: `/projects/swadestack` static, readable, under budget.
 
 ### T6 — About page
@@ -201,8 +202,9 @@ changes a rule, in an ADR.
 - **Q2 Photo in hero.** No photo in the hero or anywhere on the home page.
   Photos appear on the about page as labelled figures (`docs/02 §5.1`).
   Closed at T3.
-- **Q3 Home projects: cards with screenshots or text rows.** Default: text
-  rows until screenshots exist, then revisit. Decide at T4.
+- **Q3 Home projects: cards with screenshots or text rows.** Text rows on
+  the home page. `/projects` uses `ProjectCard`, which shows a screenshot
+  once one exists (`docs/02 §6.3`). Closed at T4.
 - **Q4 Writing section.** Ship hidden until two posts exist. Decide at T10.
 - **Q5 Contact form vs `mailto:`.** Default: `mailto:` link + socials. A form
   would need an API route and spam handling; not worth it in v1. Closed at

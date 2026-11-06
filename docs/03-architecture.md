@@ -67,7 +67,8 @@ portfolio/
 │   └── writing/
 ├── lib/                      # pure TS, no React
 │   ├── site.ts               # name, role, socials, location, email
-│   ├── content.ts            # readdir + import + validate; the only fs user
+│   ├── content.ts            # readdir + import + sort; the only fs user
+│   ├── project-module.ts     # validates an imported MDX module (ADR-0005)
 │   ├── themes.ts             # theme ids and labels
 │   └── types.ts              # ProjectMeta, PostMeta
 ├── public/
@@ -139,17 +140,17 @@ route reads uncached data, runtime data (`cookies()`, `headers()`,
 sit outside the layout tree, which is why `/api/health` can opt into
 request-time rendering with `connection()` without touching the rule.
 
-## 4. Content pipeline (ADR-0002)
+## 4. Content pipeline (ADR-0002, ADR-0005)
 
 ```
 content/projects/swadestack.mdx
-  export const meta = { title, summary, year, stack, links, featured } satisfies ProjectMeta
+  export const meta = { title, summary, year, stack, links, featured, order? }
   # Problem … ## Architecture … (body)
         │
         ▼
 lib/content.ts
   readdirSync at module scope → slugs
-  listProjects()   dynamic import of each file → validate meta → sort
+  listProjects()   dynamic import of each file → parseProjectModule → sort
   getProject(slug) dynamic import of one file → { meta, Body }
         │
         ▼
@@ -159,10 +160,17 @@ app/projects/[slug]/page.tsx
   default export         ← <Prose><Body /></Prose>
 ```
 
-- Metadata is a **named export from the MDX file**, typed with `satisfies`,
-  so a typo in a field is a TypeScript error at build, not a missing line on
-  the page. No frontmatter, no `gray-matter`, no remote MDX. This is the
-  pattern documented under "Using dynamic imports" on the Next.js MDX page.
+- Metadata is a **named export from the MDX file**, a plain JavaScript
+  object: MDX cannot contain TypeScript syntax and `tsc` does not read
+  `.mdx`. `lib/project-module.ts` narrows each imported module from
+  `unknown` to a `ProjectMeta` and an MDX body, and throws with the file
+  and field on a missing, mistyped or unknown field, so a typo fails the
+  build instead of leaving a missing line on the page (ADR-0005). No
+  frontmatter, no `gray-matter`, no remote MDX. This is the pattern
+  documented under "Using dynamic imports" on the Next.js MDX page.
+- Order is newest first by `year`. Within a year, projects with the
+  optional `order` field come first, lowest first; the rest follow in
+  title order.
 - `lib/content.ts` is the only module that reads the filesystem. The
   directory listing happens once at module scope and the bodies are
   bundler-resolved `import()`s, both "predictable values" that Cache

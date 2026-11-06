@@ -1,6 +1,7 @@
 # ADR-0002 — Content is MDX in the repository with typed metadata
 
-Status: accepted · 2026-11-03
+Status: accepted · 2026-11-03 · amended by ADR-0005 (`meta` is plain
+JavaScript, validated at build; `satisfies` cannot be used in MDX)
 
 ## Context
 

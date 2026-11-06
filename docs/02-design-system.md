@@ -179,7 +179,7 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 | `ListItem`       | title (link) · meta (mono, right) · one paragraph · optional links             |
 | `ProjectRow`     | Home: name — one line — year                                                   |
 | `Bio`            | Home: the short bio, 2–3 sentences with inline links, written as JSX           |
-| `ProjectCard`    | Projects page: screenshot + name + stack tags + links                          |
+| `ProjectCard`    | Projects page: name, year, summary, stack, links; screenshot when one exists   |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
 | `Figure`         | Photo or screenshot in a hairline border with a mono meta line below (§5.1)    |
 | `FigureGrid`     | Two or three `Figure`s in a row, separated by a hairline (§5.1)                |
@@ -255,9 +255,11 @@ rhythm rule in §5.1.
 
 ### 6.3 Projects `/projects` and `/projects/[slug]`
 
-H1 `Projects.` List of `ProjectCard` (or `ProjectRow` until screenshots
-exist), newest first. Each: name, stack tags in mono, year, one paragraph,
-`Live ↗` · `Code ↗` · `Case study →` when one exists.
+H1 `Projects.` List of `ProjectCard`, newest first; within a year, the
+order in `docs/03 §4`. Each: name, year, one paragraph, stack tags in mono,
+`Live ↗` · `Code ↗` · `Case study →`, the first two only when the link
+exists. A project without a screenshot is a hairline list item like any
+other; with one, its card gains the image and the border of §4.
 
 Case study page: H1, meta line (year · stack · links), then MDX body with
 fixed headings in this order: **Problem · Architecture · Decisions · Results

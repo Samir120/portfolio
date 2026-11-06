@@ -20,8 +20,8 @@ true` and `noImplicitOverride: true`.
   link.
 - Types over interfaces for data shapes (`type ProjectMeta = {…}`);
   interfaces only when something is meant to be implemented or extended.
-- `satisfies` to type literal objects without widening (`export const meta
-= {…} satisfies ProjectMeta`).
+- `satisfies` to type literal objects without widening (`export const SITE
+= {…} as const satisfies Site`).
 - Named exports everywhere except where a file convention requires default
   (`page.tsx`, `layout.tsx`, `route.ts`, MDX bodies).
 - No enums. Union of string literals plus a `const` array when iteration is
@@ -70,8 +70,9 @@ Theme = (typeof THEMES)[number]`.
 
 - One MDX file per project or post, filename is the slug, lowercase
   kebab-case.
-- `export const meta` at the top, typed with `satisfies`. Nothing else is
-  exported.
+- `export const meta` at the top, as a plain object literal: no imports and
+  no TypeScript syntax, which MDX cannot parse. Nothing else is exported.
+  `lib/project-module.ts` validates it at build (ADR-0005).
 - Headings start at `##` in the body; the page supplies the `h1`.
 - Prose is plain Markdown. Custom components (callouts, figures) go through
   `mdx-components.tsx` and get a one-line doc comment.

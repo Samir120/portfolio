@@ -7,14 +7,14 @@ result. No unit test framework in v1.
 
 ## 1. The gates
 
-| Gate       | Command                  | Catches                                                                                    | When   |
-| ---------- | ------------------------ | ------------------------------------------------------------------------------------------ | ------ |
-| typecheck  | `npm run typecheck`      | wrong `meta` shapes, bad props, missing fields                                             | T1     |
-| lint       | `npm run lint`           | `eslint-config-next` rules: a11y basics, `next/image`, hooks                               | T1     |
-| format     | `npm run format:check`   | drift from Prettier + Tailwind class order                                                 | T1     |
-| build      | `npm run build`          | rendering errors, `ensureStatic` violations, broken MDX, incomplete `generateStaticParams` | T1     |
-| smoke      | `npm run test:e2e`       | routes 200, title present, theme toggles, no console errors                                | M4 T13 |
-| lighthouse | CI job, see `docs/07 §3` | regressions below the §2 budgets                                                           | M4 T13 |
+| Gate       | Command                  | Catches                                                                                                    | When   |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- | ------ |
+| typecheck  | `npm run typecheck`      | bad props, missing fields, wrong types in `.ts`/`.tsx`                                                     | T1     |
+| lint       | `npm run lint`           | `eslint-config-next` rules: a11y basics, `next/image`, hooks                                               | T1     |
+| format     | `npm run format:check`   | drift from Prettier + Tailwind class order                                                                 | T1     |
+| build      | `npm run build`          | rendering errors, `ensureStatic` violations, broken MDX, invalid `meta`, incomplete `generateStaticParams` | T1     |
+| smoke      | `npm run test:e2e`       | routes 200, title present, theme toggles, no console errors                                                | M4 T13 |
+| lighthouse | CI job, see `docs/07 §3` | regressions below the §2 budgets                                                                           | M4 T13 |
 
 `package.json` scripts, fixed at T1:
 
@@ -85,8 +85,10 @@ them, in an interactive view.
   `generateStaticParams`. The route table still shows every page as `○`
   and only `/api/health` as `ƒ`; the difference is that this is now
   enforced rather than eyeballed.
-- **Content validation.** `lib/content.ts` throws at build if a file's
-  `meta` is missing a required field or has an unknown one. A bad MDX file
+- **Content validation.** `lib/project-module.ts` throws at build if a
+  file's `meta` is missing a required field, has a field of the wrong type
+  or has an unknown one, and the error names the file and the field
+  (ADR-0005). `tsc` cannot do this: it does not read `.mdx`. A bad MDX file
   cannot produce a deployed page.
 - **Link integrity.** Internal links use typed route strings from
   `lib/routes.ts` (added when there are more than five). Until then, the
