@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { FigureGrid } from "@/components/figure-grid";
 import { ListItem } from "@/components/list-item";
@@ -5,6 +6,12 @@ import { ListSection } from "@/components/list-section";
 import { SITE } from "@/lib/site";
 
 const PARAGRAPH = "text-[15px] leading-relaxed sm:text-base";
+
+// The layout's template appends the name; the description is inherited.
+export const metadata: Metadata = {
+  title: "About",
+  alternates: { canonical: "/about" },
+};
 
 export default function AboutPage() {
   return (

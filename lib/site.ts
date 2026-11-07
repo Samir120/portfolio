@@ -31,6 +31,12 @@ type Site = {
 
 const GITHUB = "https://github.com/Samir120";
 
+// Absolute origin for canonical URLs, Open Graph and the sitemap. CI passes
+// NEXT_PUBLIC_SITE_URL at build time, where it is inlined (docs/07 §6); the
+// fallback is the default subdomain from docs/06 Q1.
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://samir.swadestack.com";
+
 export const SITE = {
   name: "Samir Alami",
   role: "Full-stack developer with a högskoleingenjör degree in computer engineering from KTH.",

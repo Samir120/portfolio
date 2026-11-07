@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { SITE } from "@/lib/site";
+import { SITE, SITE_URL } from "@/lib/site";
 import {
   DEFAULT_THEME,
   LIGHT_THEME,
@@ -25,9 +25,15 @@ const jetbrainsMono = JetBrains_Mono({
 // https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/ensureStatic
 export const ensureStatic = "navigation";
 
+// Defaults for every route. Pages set a `title`, which the template extends,
+// and a relative canonical, which metadataBase makes absolute. A page without
+// a description inherits this one; Open Graph inherits title and description.
+// https://nextjs.org/docs/app/api-reference/functions/generate-metadata
 export const metadata: Metadata = {
-  title: SITE.name,
+  metadataBase: new URL(SITE_URL),
+  title: { template: `%s · ${SITE.name}`, default: SITE.name },
   description: SITE.role,
+  openGraph: { type: "website", siteName: SITE.name },
 };
 
 // Runs while the HTML is parsed, before first paint: the stored theme if it

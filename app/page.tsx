@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Bio } from "@/components/bio";
 import { ProjectRow } from "@/components/project-row";
 import { SectionHeading } from "@/components/section-heading";
 import { listProjects } from "@/lib/content";
 import { SITE } from "@/lib/site";
+
+// The title is the layout's default; only the canonical is page-specific.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const projects = await listProjects({ featured: true });

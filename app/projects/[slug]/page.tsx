@@ -23,7 +23,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = await getProject(slug);
   if (!project) notFound();
-  return { title: project.meta.title, description: project.meta.summary };
+  return {
+    title: project.meta.title,
+    description: project.meta.summary,
+    alternates: { canonical: `/projects/${slug}` },
+  };
 }
 
 // `dynamicParams = false` is not available under Cache Components; an

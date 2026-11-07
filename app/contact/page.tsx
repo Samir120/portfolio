@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { ListItem } from "@/components/list-item";
 import { ListSection } from "@/components/list-section";
 import { SITE } from "@/lib/site";
 
 const PARAGRAPH = "text-[15px] leading-relaxed sm:text-base";
+
+// The layout's template appends the name; the description is inherited.
+export const metadata: Metadata = {
+  title: "Contact",
+  alternates: { canonical: "/contact" },
+};
 
 export default function ContactPage() {
   return (
