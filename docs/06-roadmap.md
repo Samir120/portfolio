@@ -1,6 +1,6 @@
 # 06 — Roadmap
 
-Four milestones, fourteen tasks, one task at a time. A milestone is "done"
+Four milestones, fifteen tasks, one task at a time. A milestone is "done"
 when every task in it is committed and CI is green; a task is "done" when
 its exit criteria hold on `main`. Weeks assume evenings and weekends; they
 are an ordering, not a deadline.
@@ -116,6 +116,25 @@ Goal: everything a search engine, a link preview, or a screen reader needs.
   arrive with it (Q4).
 - Exit: no `TODO:` left on any public page.
 
+### T10b — Design refinement
+
+- Font roles: mono for body text, Geist for headings; one six-step type
+  scale (`docs/02 §2`).
+- Palette: Tokyo Night on its darker background, every text token at 7:1
+  or more in both themes (`docs/02 §3`).
+- Header with a hairline, the name as wordmark and the current page
+  marked; two-tier footer; `PageHeader` on every page but home.
+- Home: a portrait beside the name, project rows on a fixed grid. About:
+  one figure, a `Focus.` section, the reading list as a timeline. Projects:
+  window cards. Case studies: a spec sheet instead of a screenshot; the
+  `meta.image` field and its checks are removed. Contact: one list of
+  channels.
+- Photos tinted in the theme's two photo colours (`docs/02 §5.1`).
+- Decide Q2 again.
+- Exit: every page restyled in both themes; Lighthouse Accessibility 100
+  and no axe violations hold; no horizontal overflow at 320 px; first-load
+  JS under budget.
+
 ## M4 · Weeks 7–8 — Ship
 
 Goal: running on the cluster at the real domain, with the pipeline that will
@@ -201,12 +220,13 @@ changes a rule, in an ADR.
 - **Q1 Subdomain.** `samir.swadestack.com` (default) vs
   `portfolio.swadestack.com` vs a `www`-style separate zone. Decide before
   T12; affects nothing before that.
-- **Q2 Photo in hero.** No photo in the hero or anywhere on the home page.
-  Photos appear on the about page as labelled figures (`docs/02 §5.1`).
-  Closed at T3.
+- **Q2 Photo in hero.** A square portrait beside the name on the home
+  page, and one figure on the about page, both tinted by the theme
+  (`docs/02 §5.1`). Closed at T3 with no photo on the home page; reopened
+  and closed again at T10b.
 - **Q3 Home projects: cards with screenshots or text rows.** Text rows on
-  the home page. `/projects` uses `ProjectCard`, which shows a screenshot
-  once one exists (`docs/02 §6.3`). Closed at T4.
+  the home page. `/projects` uses `ProjectCard`, a window card without a
+  screenshot (`docs/02 §6.3`). Closed at T4; screenshots dropped at T10b.
 - **Q4 Writing section.** `app/writing/page.tsx`, `[slug]/page.tsx`, the
   post metadata type and its build-time guard arrive in one commit with the
   first post, so they are built and verified against real content. Until

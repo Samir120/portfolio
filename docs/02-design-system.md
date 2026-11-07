@@ -1,20 +1,21 @@
 # 02 — Design System
 
 The visual language is terminal-inspired: two typefaces, hairline borders,
-no rounded corners, and themes named after terminal colour schemes. The
-default palette is Tokyo Night; token values below are the exact hex
-values, not approximations. Page structure is a one-scroll home and
-list-based about, projects and contact pages. This document is the spec;
-`app/globals.css` implements it.
+no rounded corners, mono paths and title bars, and themes named after
+terminal colour schemes. The default palette is Tokyo Night; token values
+below are exact hex values from that scheme, not approximations. Page
+structure is a one-scroll home and list-based about, projects and contact
+pages. This document is the spec; `app/globals.css` implements it.
 
 ## 1. Principles
 
 1. **Flat.** No shadows, no gradients, no rounded corners. Depth comes from
-   1px borders and background steps (`bg` → `surface`).
-2. **Typography does the work.** Two families, a small scale, generous
-   measure. Decoration is a hover state.
+   1px borders and background steps (`bg-deep` → `bg` → `surface`).
+2. **Typography does the work.** Two families with fixed roles, one small
+   scale (§2), generous measure. Decoration is a hover state.
 3. **Themeable by construction.** Components only reference semantic tokens.
    A theme is a block of CSS variables; adding one touches nothing else.
+   Photos are tinted by tokens too (§5.1).
 4. **Dark first, light equal.** Both themes get the same contrast checks.
 5. **The one flourish** is the theme picker (`T`). Everything else is still.
 
@@ -27,20 +28,28 @@ list-based about, projects and contact pages. This document is the spec;
 
 Both are exposed as CSS variables from `app/layout.tsx` (`variable:
 '--font-sans'` / `'--font-mono'`) and mapped in Tailwind as `font-sans` and
-`font-mono`. Mono is used for: eyebrow labels, dates, stack tags, `kbd`
-hints, figure meta lines, the footer location stamp, and code.
+`font-mono`.
 
-Scale (Tailwind classes; nothing custom):
+**Roles.** Mono is the body face: running text, nav, buttons, links, lists,
+prose and code. Geist is the heading face: `h1`–`h6`, plus a few titles
+that are not headings (book titles, the footer name). Both rules are base
+styles in `globals.css`; headings also take `text-wrap: balance`, and
+running text (`p`, `li`, `dd`) takes `text-wrap: pretty`. Labels are told
+apart from body text by size, case and colour, not by family.
 
-| Element              | Classes                                                      |
-| -------------------- | ------------------------------------------------------------ |
-| Page title (H1)      | `text-3xl sm:text-4xl font-semibold tracking-tight`          |
-| Section heading (H2) | `text-2xl sm:text-[1.75rem] font-semibold tracking-tight`    |
-| Sub-heading (H3)     | `text-lg font-semibold`                                      |
-| Body                 | `text-[15px] sm:text-base leading-relaxed`                   |
-| Secondary            | `text-[15px] text-text-secondary leading-relaxed`            |
-| Label / meta         | `font-mono text-xs uppercase tracking-wider text-text-muted` |
-| Nav link             | `text-sm text-text-secondary hover:text-text`                |
+**Scale.** Six steps, nothing larger than the page title:
+
+| Step       | Size (mobile → `sm`) | Classes                                                      | Used for                              |
+| ---------- | -------------------- | ------------------------------------------------------------ | ------------------------------------- |
+| Page title | 24px → 30px          | `text-2xl sm:text-3xl font-semibold tracking-tight`          | every `h1`                            |
+| Section    | 18px → 20px          | `text-lg sm:text-xl font-semibold tracking-tight`            | section `h2`s, case-study `h2`s       |
+| Item title | 16px                 | `text-base font-semibold`                                    | card and list titles, prose `h3`      |
+| Body       | 15px                 | `text-[15px] leading-relaxed`                                | paragraphs, summaries, prose          |
+| Small      | 14px                 | `text-sm`                                                    | nav, buttons, link rows, footer       |
+| Label      | 12px                 | `font-mono text-xs uppercase tracking-wider text-text-muted` | paths, dates, meta, chips, title bars |
+
+Inline code in prose scales from the body (`0.875em`). Prose headings are
+set to the section and item-title steps, not the plugin's own ratios.
 
 Section headings end with a period on the about, projects and contact
 pages ("About Me.", "Projects.", "Contact."). Home section headings do not.
@@ -50,41 +59,48 @@ pages ("About Me.", "Projects.", "Contact."). Home section headings do not.
 Semantic layer, the only names components may use:
 
 ```
-bg-deep   page edges / footer band
-bg        page background
-surface   cards, header when scrolled
-surface-2 hover backgrounds
+bg-deep        footer band, title bars
+bg             page background
+surface        code blocks
+surface-2      hover backgrounds
 border-subtle  default 1px borders
-border-strong  inputs, emphasised dividers
-text      primary
+border-strong  emphasised dividers, hover frames
+text           primary
 text-secondary
 text-muted
-brand     accent: links on hover, primary button, focus ring
-brand-soft 12% brand, for tinted backgrounds
-brand-ink text on a brand-filled surface
-selection ::selection background
+brand          accent: current page, primary button, focus ring
+brand-soft     12% brand, for tinted backgrounds
+brand-ink      text on a brand-filled surface
+selection      ::selection background
+photo-shadow   darkest colour of a tinted photo
+photo-light    lightest colour of a tinted photo
 ```
 
 ### 3.1 Tokyo Night (default, dark)
 
 ```css
 [data-theme="tokyo-night"] {
-  --t-bg-deep: #13141c;
-  --t-bg: #1a1b26;
-  --t-surface: #1f2230;
+  --t-bg-deep: #0f0f14;
+  --t-bg: #16161e;
+  --t-surface: #1a1b26;
   --t-surface-2: #292e42;
   --t-border-subtle: #24283b;
   --t-border-strong: #414868;
   --t-text: #c0caf5;
   --t-text-secondary: #a9b1d6;
-  --t-text-muted: #8b93b8;
+  --t-text-muted: #9aa5ce;
   --t-brand: #9ece6a;
   --t-brand-soft: #9ece6a1f;
   --t-brand-ink: #0c0e10;
   --t-selection: #292e42;
+  --t-photo-shadow: #16161e;
+  --t-photo-light: #c0caf5;
   color-scheme: dark;
 }
 ```
+
+`bg` is the scheme's darker background (`bg_dark`); `surface` is its
+standard one. `text-muted` is the scheme's editor foreground.
 
 ### 3.2 White (light)
 
@@ -99,10 +115,12 @@ selection ::selection background
   --t-text: #000000;
   --t-text-secondary: #383838;
   --t-text-muted: #4a4a4a;
-  --t-brand: #6e6e6e;
-  --t-brand-soft: #6e6e6e1f;
+  --t-brand: #555555;
+  --t-brand-soft: #5555551f;
   --t-brand-ink: #ffffff;
   --t-selection: #c0c0c0;
+  --t-photo-shadow: #1a1a1a;
+  --t-photo-light: #f5f5f5;
   color-scheme: light;
 }
 ```
@@ -133,16 +151,23 @@ change with no re-render:
   --color-brand: var(--t-brand);
   --color-brand-soft: var(--t-brand-soft);
   --color-brand-ink: var(--t-brand-ink);
+  --color-photo-shadow: var(--t-photo-shadow);
+  --color-photo-light: var(--t-photo-light);
 
   --radius-*: initial; /* no rounded corners anywhere */
 }
 ```
 
 Usage is then plain Tailwind: `bg-bg text-text border-border-subtle
-hover:bg-surface-2`. Contrast: every `text-*` on every `bg-*` pair used must
-pass 4.5:1 in both themes. Tokyo Night `text-muted` measures 5.7:1 on `bg`,
-5.2:1 on `surface` and 4.45:1 on `surface-2`. The last one fails, so muted
-text never sits on a `surface-2` background; don't make the token lighter.
+hover:bg-surface-2`.
+
+**Contrast.** Every text token reaches 7:1 (WCAG AAA) on `bg`, `bg-deep`
+and `surface` in both themes. The lowest pairs are Tokyo Night
+`text-muted` at 7.0:1 on `surface` and White `text-muted` at 8.1:1 on
+`bg-deep`. Tokyo Night `text-muted` on `surface-2` is 5.5:1, which passes
+AA; `surface-2` is a hover background only. Button text on `brand` is
+10.6:1 (Tokyo Night) and 7.5:1 (White). A new token pair is measured
+before it is used.
 
 The typography plugin that styles MDX bodies is coloured the same way:
 `@utility prose-tokens` in `globals.css` sets its `--tw-prose-*` variables
@@ -158,9 +183,11 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
 - **Measure:** `max-w-3xl` (48rem) for all reading content, centred,
   `px-4 sm:px-6`.
 - **Header:** sticky, `h-14`, `max-w-3xl` inner, `bg-bg/90 backdrop-blur`
-  at all times; it only shows once content scrolls under it. Left: `/`
-  wordmark (home link, mono, brand colour on hover). Right: Home · About ·
-  Projects · Contact · theme button with a `kbd` showing `T`.
+  with a bottom hairline. Left: the wordmark, a `brand` slash and the name
+  in mono `text-sm`, linking home. Right: Home · About · Projects ·
+  Contact, then a vertical hairline, then the theme button with a `kbd`
+  showing `T`. The current page's nav link is `text` with a 2px `brand`
+  underline (§7).
 - **Skip link:** the first focusable element on every page, a plain
   fragment link `Skip to content` that targets `<main id="main">`. Hidden
   until focused, then shown top-left over the header in `text-sm` on `bg`.
@@ -168,16 +195,20 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
   browser scrolls into view (a focused link, an anchor, the skip target)
   lands clear of the sticky header. Elements take no `scroll-mt-*` of
   their own.
-- **Footer:** `border-t border-border-subtle`, `bg-bg-deep`. Name · © year ·
-  "Built with Next.js" · social links · location stamp `STOCKHOLM` in mono
-  uppercase.
-- **Section spacing:** `py-12 sm:py-16` between home sections; `space-y-4`
-  inside a list section.
+- **Footer:** `border-t border-border-subtle`, `bg-bg-deep`, two tiers.
+  Top: the name in Geist with the role line under it, and the social
+  links. Then a hairline and a colophon in the label style: `© <year>
+<name>` and `<location> · Built with Next.js`.
+- **Page header:** every page but home opens with `PageHeader`: a mono
+  path (`~/about`, `~/projects/leta`, `404`), the `h1`, an optional lead
+  paragraph, and a closing hairline.
+- **Section spacing:** `py-12 sm:py-16` per page; one section gap between
+  the home hero and its projects; `space-y-12 sm:space-y-16` between list
+  sections.
 - **Borders over boxes.** A list item is `border-b border-border-subtle
-py-4`, not a card. Cards exist only for project screenshots, and are
-  `border border-border-subtle` with the image edge-to-edge and the text in
-  `p-4 sm:p-6` below it; `my-6` keeps a card's border clear of its hairline
-  neighbours. Photos use `Figure` (§5.1), which follows the same rule.
+py-4`, not a card. Boxes are reserved for windows: project cards, the
+  case-study spec sheet and the contact list, each `border
+border-border-subtle`; project cards add a mono title bar on `bg-deep`.
 - **Mobile:** single column always. Below `sm` the header collapses to
   wordmark + a text "Menu" toggle + theme button; no hamburger icon. The
   toggle opens the same nav list in a panel under the header.
@@ -186,133 +217,133 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 
 | Component        | Purpose                                                                        |
 | ---------------- | ------------------------------------------------------------------------------ |
-| `SiteHeader`     | Sticky nav, wordmark, theme button                                             |
-| `SiteFooter`     | As above                                                                       |
+| `SiteHeader`     | Sticky bar: wordmark, nav, theme button                                        |
+| `SiteFooter`     | Two-tier footer, as above                                                      |
+| `PageHeader`     | Mono path, `h1`, optional lead, hairline                                       |
 | `SectionHeading` | H2 + optional one-line description + optional right-side action link           |
 | `ListSection`    | Heading + list of `ListItem`                                                   |
 | `ListItem`       | title (optionally a link) · meta (mono, right) · subtitle · one paragraph      |
-| `ProjectRow`     | Home: name — one line — year                                                   |
+| `ReadingList`    | The reading list as a timeline: one row per year, newest first                 |
+| `ProjectRow`     | Home: index · name · summary · year on a fixed grid                            |
 | `Bio`            | Home: the short bio, 2–3 sentences, written as JSX                             |
-| `ProjectCard`    | Projects page: name, year, summary, stack, links; screenshot when one exists   |
+| `ProjectCard`    | Projects page: a window with title bar, name, summary, stack chips, links      |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
-| `Figure`         | Photo or screenshot in a hairline border with a mono meta line below (§5.1)    |
-| `FigureGrid`     | Two or three photos as panes in one hairline frame (§5.1)                      |
+| `Portrait`       | Home: square tinted photo beside the name (§5.1)                               |
+| `Figure`         | A tinted photo in a hairline frame with a mono meta band below (§5.1)          |
+| `Duotone`        | Tints a photo in the theme's two photo colours (§5.1)                          |
 | `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
-| `MobileMenu`     | Client component. "Menu" button below `sm`; shows the header's nav list.       |
+| `MobileMenu`     | Client component. The nav list, the current page, the "Menu" button below `sm` |
 | `Kbd`            | Inline keyboard hint in mono                                                   |
 | `ExternalLink`   | `<a>` with `rel="noopener noreferrer"` and a trailing `↗`                      |
+| `OgCard`         | Open Graph card rendered by `next/og` (§8)                                     |
 
 Every component is a Server Component unless listed as client. Only
 `ThemeToggle` and `MobileMenu` are client components.
 
-### 5.1 Figures
+### 5.1 Photos
 
-Photos are shown as labelled figures, built from the same tokens as
-everything else.
+Photos belong to the theme. Each one is rendered in two colours of the
+active palette, and a theme switch re-tints it with the rest of the page.
 
-- **`Figure`:** `next/image` with hard corners inside
-  `border border-border-subtle`, the image edge-to-edge inside the border.
-  Below it sits one meta line in the label style of §2, left-aligned, for
-  example `STOCKHOLM · 2024`, with an optional right-aligned index such as
-  `01` (the `label` and `index` props). No captions in prose, no shadows,
-  no radius, no hover effects. It carries `not-prose`, so inside an MDX
-  body the typography plugin leaves it alone. Images load lazily; only an
-  LCP image above the fold passes `preload`.
-- **`FigureGrid`:** two or three photos as panes in one frame, like a
-  tiled window. It renders its own cells rather than nesting `Figure`,
-  whose border would double every hairline. The frame is
-  `border border-border-subtle` with `gap-px bg-border-subtle`; each cell
-  is `bg-bg`, so only the 1px gaps show and every edge is a single line.
-  A cell is the image, then the meta line inside the pane (`px-3 py-2`,
-  label style, optional right-aligned index). One column on mobile.
-  Heights are equal because a grid has one fixed aspect ratio
-  (`aspect-[3/2]` by default, `aspect-square` as the option): each image
-  is `next/image` `fill` in a `relative` aspect box, `object-cover`, with a
-  `sizes` value for one cell's width. It also carries `not-prose`.
-- **Treatment:** a uniform `saturate-[.85]`, so photos from different years
-  and cameras sit together in both themes. Tokyo Night may add
-  `brightness-[.95]`. No grayscale and no colour on hover; the site stays
-  still.
-- **Rhythm:** at most one `Figure` or `FigureGrid` per section, never two
-  in a row, never above the H1 and never in the home hero. A figure never
+- **`Duotone`:** wraps an `<Image>`. The image is greyscaled and multiplied
+  onto `photo-light`; a `photo-shadow` layer is then blended in with
+  `lighten`. Shadows become `photo-shadow`, highlights `photo-light`. In
+  Tokyo Night that is navy and lavender; in White, a soft black and white.
+- **`Portrait`:** the home photo, a square (`size-20 sm:size-24`) in a
+  hairline frame beside the eyebrow and name. The image is `next/image`
+  `fill` with `object-cover`, so any source crops to the centre. It is the
+  only image beside the `h1`, and it carries no meta line.
+- **`Figure`:** a photo at its own ratio in a hairline frame, with one
+  meta line below it in a `bg-deep` band in the label style
+  (`STOCKHOLM · 2023`). Explicit `width` and `height`, lazy by default;
+  `preload` is for an LCP image only. It carries `not-prose`, so the
+  typography plugin leaves it alone inside an MDX body, where it is mapped
+  in `mdx-components.tsx`.
+- **Rhythm:** home shows the portrait only; about shows one `Figure` after
+  the first paragraph of the long bio. No photo in project cards or case
+  studies: projects are shown through their content (§6.3). A figure never
   exceeds the `max-w-3xl` measure.
-- **MDX:** both are mapped in `mdx-components.tsx`, so case studies use the
-  same components.
 
 ## 6. Pages
 
 ### 6.1 Home `/`
 
-1. Eyebrow, mono: `Hi there, I'm`
-2. H1: name
-3. One line, secondary: the role line from `lib/site.ts`, which is also the
-   default description and the line on the Open Graph card
-4. Bio, 2–3 sentences
-5. Actions: `Get in touch` (brand fill, square) · `About me →` (text link)
-6. `Selected projects` — 3–4 `ProjectRow`s, action link `All projects →`
-7. `Writing` — `ListItem`s with date right-aligned; hidden until 2 posts
-8. Footer
+1. Hero row: `Portrait`, then the eyebrow `Hi there, I'm` and the name as
+   `h1`, vertically centred on each other
+2. The role line from `lib/site.ts`, secondary, which is also the default
+   description and the line on the Open Graph card
+3. Bio, 2–3 sentences
+4. Actions: `Get in touch` (brand fill, square) · `About me →` (text link)
+5. `Selected projects` — 3–4 `ProjectRow`s, action link `All projects →`
+6. `Writing` — `ListItem`s with date right-aligned; hidden until 2 posts
+7. Footer
 
-The hero is text-only: no photo anywhere on the home page (`docs/06` Q2).
 The bio here stays at 2–3 sentences; the long bio is on the about page.
 
 ### 6.2 About `/about`
 
-H1 `About Me.` then the long bio: an unheaded block of two to four
-paragraphs directly under the H1. One `FigureGrid` may sit inside it, after
-the first or second paragraph and nowhere else in the block.
+`PageHeader` (`~/about`, `About Me.`), then the long bio: two to four
+paragraphs with one `Figure` after the first.
 
-Then `ListSection`s, each ending in a period:
+Then the sections, each ending in a period:
 
-- `Engineering.` / `Infrastructure.` / `Learning.` — three pillars, one
-  paragraph each, a link each (GitHub, swadestack-k8s, reading list).
-  Each pillar is a `ListSection` with one `ListItem` whose title is the
-  link; the reading list link jumps to the `Reading.` section.
+- `Focus.` — Engineering, Infrastructure, Learning: one `ListItem` each,
+  the title linking to GitHub, swadestack-k8s and the reading list, the
+  link's label in the meta slot. Learning jumps to `Reading.`
 - `Experience.` — role as the title, company and location as the
   subtitle, years as meta, one paragraph
 - `Education.` — school, degree as the subtitle, years as meta
-- `Reading.` — books/courses with author and year, one line each
+- `Reading.` — `ReadingList`: a row per year, the year in mono on the
+  left, that year's books on the right, titles in Geist and authors in
+  mono below
 - Closing CTA: `Continue to Projects →`
 
 The section data comes from `lib/site.ts` (`docs/03 §6`); the long bio and
-its figures are JSX in the page.
-
-Photos appear on this page only as `Figure` or `FigureGrid`, under the
-rhythm rule in §5.1.
+its figure are JSX in the page.
 
 ### 6.3 Projects `/projects` and `/projects/[slug]`
 
-H1 `Projects.` List of `ProjectCard`, newest first; within a year, the
-order in `docs/03 §4`. Each: name, year, one paragraph, stack tags in mono,
-`Live ↗` · `Code ↗` · `Case study →`, the first two only when the link
-exists. A project without a screenshot is a hairline list item like any
-other; with one (`meta.image`), its card gains the image and the border of
-§4. The image is not a link; the title and `Case study →` already are.
+`PageHeader` (`~/projects`, `Projects.`), then one `ProjectCard` per
+project, newest first; within a year, the order in `docs/03 §4`. Every card
+is the same window: a mono title bar on `bg-deep` with the index and path
+(`01  ~/projects/swadestack`) and the year; then the name as `h2`, the
+summary, the stack as hairline mono chips, and `Live ↗` · `Code ↗` ·
+`Case study →`, the first two only when the link exists. The frame darkens
+to `border-strong` on hover.
 
-Case study page: H1, meta line (year · stack · links), the screenshot as a
-`Figure` when the project has one (meta line `<TITLE> · <YEAR>`, preloaded
-as the page's LCP image), then MDX body with fixed headings in this order:
-**Problem · Architecture · Decisions · Results · What I'd change**. Closing
-CTA: `Continue to Contact →`.
+Case study page: `PageHeader` with the project's path, title and summary
+as the lead; then a spec sheet, a bordered `<dl>` with Year, Stack (chips),
+and Live and Code as readable addresses, each link row only when the link
+exists; then the MDX body. Each body `h2` after the first opens with a
+hairline. Bodies use fixed headings in this order where they fit:
+**Problem · Architecture · Decisions · Results · What I'd change**.
+Closing CTA: `Continue to Contact →`.
 
 ### 6.4 Contact `/contact`
 
-H1 `Contact.` One sentence. The email from `lib/site.ts` as a large mono
-`mailto:` link that breaks anywhere rather than overflow (`docs/04 §3`).
-Optional one-liner on freelance availability. Then `ListSection`
-`Socials.`, one `ListItem` per social link (GitHub, LinkedIn, …). No form
-(`docs/06` Q5).
+`PageHeader` (`~/contact`, `Contact.`, the contact sentence as the lead),
+then one bordered `<dl>`: Email (a `mailto:` link that breaks anywhere
+rather than overflow, `docs/04 §3`), one row per social link showing its
+address, and Location. Labels are mono, in a fixed column from `sm` and
+above their value below it. No form (`docs/06` Q5).
 
 ### 6.5 404
 
-Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
+Same chrome. `PageHeader` with `404` as the path and `Not found.` as the
+title, then a link home.
 
 ## 7. Interaction
 
 - Links: `underline-offset-4 decoration-border-strong hover:decoration-brand`
-  in prose; nav links have no underline, colour change only.
+  in prose and value links; nav links have no underline, colour change
+  only, except the current page.
+- Current page: the nav link whose section contains the path carries
+  `aria-current="page"` and is styled `text` with a 2px `brand` underline.
+  `/projects/leta` marks Projects.
 - Focus: a 2px `brand` outline with a 2px offset on `:focus-visible`, set
   once as a base rule in `globals.css`. Never remove outlines.
+- Buttons keep the pointer cursor (a base rule; Tailwind v4's preflight
+  gives buttons the default one).
 - Theme switch: `data-theme` on `<html>`, set before paint by an inline
   script in `layout.tsx` (reads `localStorage`, falls back to
   `prefers-color-scheme`). `T` cycles themes; the button does the same.
@@ -336,17 +367,12 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
   `app/projects/[slug]/opengraph-image.tsx` replaces it on case studies:
   `Projects · <year>` eyebrow, title, summary, name and host. Both render
   `components/og-card.tsx`: a hairline frame, a `brand` `/` before the
-  eyebrow, the title in Geist SemiBold and the rest in Geist Regular.
+  eyebrow, the title in Geist SemiBold and the rest in Geist Regular. Its
+  colours repeat §3.1, because the renderer cannot read CSS variables.
 - OG fonts: `next/og` needs font data as TTF or OTF, which `next/font`
   cannot supply, so static Geist Regular and SemiBold TTFs are committed in
   `assets/fonts/` with their OFL licence (`OFL.txt`) and read with
   `readFile` at build. Nothing is fetched.
-- Project screenshots: 1600×1000 WebP, under 150 kB each, in
-  `public/projects/<slug>.webp`, served through `next/image`. A project
-  declares its screenshot as `meta.image` (`src`, `alt`); the build fails
-  if the file is missing.
 - Photos: WebP, at most 100 kB each, in `public/figures/`, served through
   `next/image` with a `sizes` value and lazy loading (the `next/image`
-  default). `Figure` passes explicit `width` and `height`; `FigureGrid`
-  uses `fill` inside its fixed aspect box. Until the real photos exist,
-  placeholder files stand in and their meta lines read `TODO:`.
+  default). There are no project screenshots.

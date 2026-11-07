@@ -48,14 +48,17 @@ portfolio/
 │   ├── site-header.tsx
 │   ├── mobile-menu.tsx       # 'use client'
 │   ├── site-footer.tsx
+│   ├── page-header.tsx
 │   ├── section-heading.tsx
 │   ├── list-section.tsx
 │   ├── list-item.tsx
+│   ├── reading-list.tsx
 │   ├── project-row.tsx
 │   ├── project-card.tsx
 │   ├── bio.tsx
+│   ├── portrait.tsx
 │   ├── figure.tsx
-│   ├── figure-grid.tsx
+│   ├── duotone.tsx
 │   ├── prose.tsx
 │   ├── theme-toggle.tsx      # 'use client'
 │   ├── kbd.tsx
@@ -70,11 +73,11 @@ portfolio/
 │   ├── site.ts               # SITE_URL; name, role, socials, location, email
 │   ├── content.ts            # readdir + import + sort; the only content reader
 │   ├── project-module.ts     # validates an imported MDX module (ADR-0005)
+│   ├── display-url.ts        # "https://…" → the address as people read it
 │   ├── themes.ts             # theme ids and labels
 │   └── types.ts              # ProjectMeta; PostMeta with the first post
 ├── assets/fonts/             # Geist TTFs + OFL.txt for next/og, not served
 ├── public/
-│   ├── projects/*.webp
 │   ├── figures/*.webp
 │   └── cv.pdf
 ├── docs/                     # these documents, public
@@ -123,9 +126,10 @@ prerendered has to be cached, deferred, or explicitly made request-time.
 | `sitemap.xml`, `robots.txt`, `icon.svg` | Static                                              | File conventions                   |
 
 All pages are Server Components. There is no `fetch()` anywhere. The two
-client components (`ThemeToggle`, `MobileMenu`) receive no data: the first
-touches `document` and `localStorage`, the second holds the menu's open
-state. The only other client code is the framework's: `next/image` ships
+client components (`ThemeToggle`, `MobileMenu`) receive no content: the
+first touches `document` and `localStorage`; the second receives the nav
+items, holds the menu's open state and reads the pathname to mark the
+current page. The only other client code is the framework's: `next/image` ships
 its own client component (`docs/05 §2`).
 
 One value is cached: the copyright year in `SiteFooter`. A prerendered
@@ -171,12 +175,12 @@ script never runs on it; `ThemeToggle` re-applies the theme (§5).
 
 ```
 content/projects/swadestack.mdx
-  export const meta = { title, summary, year, stack, links, featured, order?, image? }
+  export const meta = { title, summary, year, stack, links, featured, order? }
   # Problem … ## Architecture … (body)
         │
         ▼
 lib/content.ts
-  readdirSync at module scope → slugs, and public/projects/ → screenshots
+  readdirSync at module scope → slugs
   listProjects()   dynamic import of each file → parseProjectModule → sort
   getProject(slug) dynamic import of one file → { meta, Body }
         │
@@ -184,7 +188,7 @@ lib/content.ts
 app/projects/[slug]/page.tsx
   generateStaticParams() ← listProjects()
   generateMetadata()     ← meta
-  default export         ← <Figure> (meta.image) + <Prose><Body /></Prose>
+  default export         ← <PageHeader> + spec sheet (meta) + <Prose><Body /></Prose>
 ```
 
 - Metadata is a **named export from the MDX file**, a plain JavaScript
@@ -195,9 +199,6 @@ app/projects/[slug]/page.tsx
   build instead of leaving a missing line on the page (ADR-0005). No
   frontmatter, no `gray-matter`, no remote MDX. This is the pattern
   documented under "Using dynamic imports" on the Next.js MDX page.
-- `meta.image` (`src`, `alt`) declares a screenshot. The guard checks its
-  shape; `lib/content.ts` fails the build if the file is not in
-  `public/projects/`.
 - Bodies are CommonMark plus GitHub Flavored Markdown (tables) through
   `remark-gfm`, passed to `createMDX` by name because Turbopack cannot
   receive JavaScript functions.
@@ -254,7 +255,7 @@ hard-coded personal fact.
 The two bios are the exception to "one file". They are prose, written as
 JSX so that a link or emphasis can be added without a string format and a
 parser in `lib/site.ts`: the short bio in a Server Component
-(`components/bio.tsx`), the long bio and its photos in
+(`components/bio.tsx`), the long bio and its photo in
 `app/about/page.tsx`, the only page that shows them. `lib/` stays free of
 React.
 

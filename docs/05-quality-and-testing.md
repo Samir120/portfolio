@@ -62,16 +62,17 @@ framework. At Next.js 16.4.5 the runtime alone is 138.4 kB gzipped,
 measured with both client components removed; the two client components
 add 0.9 kB. `next/image` adds 5.8 kB, and it reaches every route that
 loads an MDX module, `/` included: each module imports
-`mdx-components.tsx`, which maps `Figure` and `FigureGrid`. `/about`
-renders a `FigureGrid` directly. A generated image route in the root
+`mdx-components.tsx`, which maps `Figure`. `/` and `/about` also render
+a photo directly. A generated image route in the root
 segment (`app/opengraph-image.tsx`) adds 1.0 kB to every route: none of
 it is image code; Turbopack moves the layout's client components into a
 chunk of their own. A committed static PNG would cost nothing, but the
 card is generated (`docs/02 §8`). The theme re-apply in `ThemeToggle`
-(`docs/03 §5`) adds 0.1 kB. First load is therefore 146.2 kB on
-`/`, `/about`, `/projects` and `/projects/[slug]`, and 140.5 kB on
-`/contact` and `/_not-found`, which leaves about 4 kB under the
-ceiling. The numbers are re-baselined when Next.js is
+(`docs/03 §5`) adds 0.1 kB, and the nav links rendered by `MobileMenu`
+so it can mark the current page add 0.2 kB. First load is therefore
+146.4 kB on `/`, `/about`, `/projects` and `/projects/[slug]`, and
+140.7 kB on `/contact` and `/_not-found`, which leaves about 3.6 kB under
+the ceiling. The numbers are re-baselined when Next.js is
 upgraded.
 
 `next build` no longer prints bundle sizes (removed in Next 16), but it
@@ -101,9 +102,8 @@ them, in an interactive view.
 - **Content validation.** `lib/project-module.ts` throws at build if a
   file's `meta` is missing a required field, has a field of the wrong type
   or has an unknown one, and the error names the file and the field
-  (ADR-0005). `tsc` cannot do this: it does not read `.mdx`.
-  `lib/content.ts` also throws if `meta.image` names a file that is not in
-  `public/projects/`. A bad MDX file cannot produce a deployed page.
+  (ADR-0005). `tsc` cannot do this: it does not read `.mdx`. A bad MDX
+  file cannot produce a deployed page.
 - **Link integrity.** Internal links use typed route strings from
   `lib/routes.ts` (added when there are more than five). Until then, the
   smoke test covers it.
