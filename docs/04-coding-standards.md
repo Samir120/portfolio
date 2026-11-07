@@ -58,7 +58,9 @@ Theme = (typeof THEMES)[number]`.
 
 - Tokens only. `bg-bg`, `text-text-muted`, `border-border-subtle`. Never a
   raw colour utility (`bg-slate-900`) or an arbitrary hex (`bg-[#1a1b26]`)
-  in a component.
+  in a component. The one exception is `components/og-card.tsx`: `next/og`
+  renders inline styles and cannot read CSS variables, so it repeats the
+  Tokyo Night values from `docs/02 §3.1`.
 - Class order is Prettier's (`prettier-plugin-tailwindcss`). Don't fight it.
 - Long class lists stay on one line; readability comes from small
   components, not from line breaks inside `className`.

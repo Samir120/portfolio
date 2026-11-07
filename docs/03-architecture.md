@@ -41,7 +41,7 @@ portfolio/
 │   │   ├── page.tsx
 │   │   └── [slug]/
 │   │       ├── page.tsx      # generateStaticParams + dynamic MDX import
-│   │       └── opengraph-image.tsx
+│   │       └── opengraph-image.tsx # own generateStaticParams
 │   ├── writing/              # M3, ships hidden
 │   └── api/health/route.ts   # GET 200 for k8s probes (M4)
 ├── components/               # shared UI, flat; one component per file
@@ -59,18 +59,20 @@ portfolio/
 │   ├── prose.tsx
 │   ├── theme-toggle.tsx      # 'use client'
 │   ├── kbd.tsx
-│   └── external-link.tsx
+│   ├── external-link.tsx
+│   └── og-card.tsx           # Open Graph card, rendered by next/og
 ├── content/                  # the site's data — MDX and TS, no JSX layout
 │   ├── projects/
 │   │   ├── swadestack.mdx
 │   │   └── …
 │   └── writing/
 ├── lib/                      # pure TS, no React
-│   ├── site.ts               # name, role, socials, location, email
-│   ├── content.ts            # readdir + import + sort; the only fs user
+│   ├── site.ts               # SITE_URL; name, role, socials, location, email
+│   ├── content.ts            # readdir + import + sort; the only content reader
 │   ├── project-module.ts     # validates an imported MDX module (ADR-0005)
 │   ├── themes.ts             # theme ids and labels
 │   └── types.ts              # ProjectMeta, PostMeta
+├── assets/fonts/             # Geist TTFs + OFL.txt for next/og, not served
 ├── public/
 │   ├── projects/*.webp
 │   ├── figures/*.webp
@@ -112,13 +114,13 @@ Cache Components is on (`cacheComponents: true`, ADR-0004). Every route is
 rendered to a static shell at build time; anything that cannot be
 prerendered has to be cached, deferred, or explicitly made request-time.
 
-| Route                                  | Rendering                             | Why                                |
-| -------------------------------------- | ------------------------------------- | ---------------------------------- |
-| `/`, `/about`, `/contact`, `/projects` | Static, build time                    | Content is in the repo             |
-| `/projects/[slug]`                     | Static via `generateStaticParams`     | One page per MDX file              |
-| `/api/health`                          | Request-time via `await connection()` | Probes need a live 200, not a file |
-| `opengraph-image`                      | Static per route                      | `next/og` at build                 |
-| `sitemap.xml`, `robots.txt`            | Static                                | File conventions                   |
+| Route                                   | Rendering                                           | Why                                |
+| --------------------------------------- | --------------------------------------------------- | ---------------------------------- |
+| `/`, `/about`, `/contact`, `/projects`  | Static, build time                                  | Content is in the repo             |
+| `/projects/[slug]`                      | Static via `generateStaticParams`                   | One page per MDX file              |
+| `/api/health`                           | Request-time via `await connection()`               | Probes need a live 200, not a file |
+| `opengraph-image`                       | Static; per slug via its own `generateStaticParams` | `next/og` at build                 |
+| `sitemap.xml`, `robots.txt`, `icon.svg` | Static                                              | File conventions                   |
 
 All pages are Server Components. There is no `fetch()` anywhere. The two
 client components (`ThemeToggle`, `MobileMenu`) receive no data: the first
@@ -140,6 +142,21 @@ route reads uncached data, runtime data (`cookies()`, `headers()`,
 `searchParams`), or lacks a complete `generateStaticParams`. Route handlers
 sit outside the layout tree, which is why `/api/health` can opt into
 request-time rendering with `connection()` without touching the rule.
+
+Image routes (`opengraph-image`) are Route Handlers too, so neither
+`ensureStatic` nor the page's `generateStaticParams` covers them. The
+case-study image exports its own `generateStaticParams` from
+`listProjects()`; without it the route is `ƒ` and renders per request.
+Their static-ness is read from the build's route table: `○` for the root
+card, `●` for each slug.
+
+Metadata follows the same split. The root layout sets `metadataBase` from
+`SITE_URL`, a `%s · <name>` title template, the default description (the
+role line) and Open Graph defaults (`type`, `siteName`). Each page sets
+only its `title` and a relative `alternates.canonical`; case studies add
+their summary as description. Open Graph and Twitter tags inherit title
+and description from the page; no page sets `openGraph`, which would
+replace the layout's whole object.
 
 `dynamicParams` is route segment config and is not available under Cache
 Components, so `/projects/[slug]` rejects an unknown slug by calling
@@ -185,12 +202,14 @@ app/projects/[slug]/page.tsx
 - Order is newest first by `year`. Within a year, projects with the
   optional `order` field come first, lowest first; the rest follow in
   title order.
-- `lib/content.ts` is the only module that reads the filesystem. The
-  directory listing happens once at module scope and the bodies are
-  bundler-resolved `import()`s, both "predictable values" that Cache
-  Components prerenders without a cache directive. Should the
-  `ensureStatic` validation report a read as uncached data, that read moves
-  into a `'use cache'` function with `cacheLife('max')` (ADR-0004).
+- `lib/content.ts` is the only module that reads content. The only other
+  filesystem reads are the two `opengraph-image` routes loading their font
+  files (`docs/02 §8`). The directory listing happens once at module scope
+  and the bodies are bundler-resolved `import()`s, both "predictable
+  values" that Cache Components prerenders without a cache directive.
+  Should the `ensureStatic` validation report a read as uncached data,
+  that read moves into a `'use cache'` function with `cacheLife('max')`
+  (ADR-0004).
 - It is imported by Server Components only, never by client code; the
   `server-only` import at its top enforces that.
 - Slug = filename. Renaming a file renames the URL; that is intentional and

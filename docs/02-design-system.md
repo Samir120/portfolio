@@ -314,9 +314,19 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
 
 ## 8. Assets
 
-- Favicon: `/` glyph, generated as `app/icon.svg` (Next file convention).
-- Open Graph image: generated per route with `next/og` (`opengraph-image.tsx`),
-  Tokyo Night background, name + title in Geist, no photo.
+- Favicon: the `/` glyph, a `brand` slash on a Tokyo Night `bg` square, as
+  `app/icon.svg` (Next file convention). There is no `favicon.ico`.
+- Open Graph image: 1200×630, generated at build with `next/og`, always
+  Tokyo Night, no photo. `app/opengraph-image.tsx` is the default card:
+  location eyebrow, name, role line, host.
+  `app/projects/[slug]/opengraph-image.tsx` replaces it on case studies:
+  `Projects · <year>` eyebrow, title, summary, name and host. Both render
+  `components/og-card.tsx`: a hairline frame, a `brand` `/` before the
+  eyebrow, the title in Geist SemiBold and the rest in Geist Regular.
+- OG fonts: `next/og` needs font data as TTF or OTF, which `next/font`
+  cannot supply, so static Geist Regular and SemiBold TTFs are committed in
+  `assets/fonts/` with their OFL licence (`OFL.txt`) and read with
+  `readFile` at build. Nothing is fetched.
 - Project screenshots: 1600×1000 WebP, under 150 kB each, in
   `public/projects/<slug>.webp`, served through `next/image`. A project
   declares its screenshot as `meta.image` (`src`, `alt`); the build fails

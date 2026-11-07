@@ -63,9 +63,14 @@ measured with both client components removed; the two client components
 add 0.9 kB. `next/image` adds 5.8 kB, and it reaches every route that
 loads an MDX module, `/` included: each module imports
 `mdx-components.tsx`, which maps `Figure` and `FigureGrid`. `/about`
-renders a `FigureGrid` directly. First load is therefore 145.1 kB on `/`,
-`/about`, `/projects` and `/projects/[slug]`, which leaves about 5 kB
-under the ceiling. The numbers are re-baselined when Next.js is
+renders a `FigureGrid` directly. A generated image route in the root
+segment (`app/opengraph-image.tsx`) adds 1.0 kB to every route: none of
+it is image code; Turbopack moves the layout's client components into a
+chunk of their own. A committed static PNG would cost nothing, but the
+card is generated (`docs/02 §8`). First load is therefore 146.1 kB on
+`/`, `/about`, `/projects` and `/projects/[slug]`, and 140.4 kB on
+`/contact` and `/_not-found`, which leaves about 4 kB under the
+ceiling. The numbers are re-baselined when Next.js is
 upgraded.
 
 `next build` no longer prints bundle sizes (removed in Next 16), but it
@@ -89,7 +94,9 @@ them, in an interactive view.
   request-time data, or a dynamic route lacks a complete
   `generateStaticParams`. The route table still shows every page as `○`
   and only `/api/health` as `ƒ`; the difference is that this is now
-  enforced rather than eyeballed.
+  enforced rather than eyeballed. Image routes sit outside the rule
+  (`docs/03 §3`): check that `opengraph-image` stays `○` and each
+  case-study image `●`.
 - **Content validation.** `lib/project-module.ts` throws at build if a
   file's `meta` is missing a required field, has a field of the wrong type
   or has an unknown one, and the error names the file and the field
