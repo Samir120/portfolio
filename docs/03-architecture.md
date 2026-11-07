@@ -220,14 +220,17 @@ app/projects/[slug]/page.tsx
 ## 6. Data flow for `lib/site.ts`
 
 One file holds every fact about the person: name, role line, socials,
-location, email, CV path. Every page imports from it. Changing the role
+location, email, CV path, and the structured sections of the about page
+(pillars, experience, education, reading). Every page imports from it. Changing the role
 line is a one-line change in one file. Nothing in `app/` contains a
 hard-coded personal fact.
 
-The bio is the one exception to "one file". It is prose with inline links,
-so it is written as JSX in a Server Component (`components/bio.tsx`)
-instead of as strings in `lib/site.ts` that would need a parser. `lib/`
-stays free of React.
+The two bios are the exception to "one file". They are prose with inline
+links, so they are written as JSX instead of as strings in `lib/site.ts`
+that would need a parser: the short bio in a Server Component
+(`components/bio.tsx`), the long bio and its photos in
+`app/about/page.tsx`, the only page that shows them. `lib/` stays free of
+React.
 
 ## 7. What is deliberately absent
 

@@ -62,9 +62,10 @@ framework. At Next.js 16.4.5 the runtime alone is 138.4 kB gzipped,
 measured with both client components removed; the two client components
 add 0.9 kB. `next/image` adds 5.8 kB, and it reaches every route that
 loads an MDX module, `/` included: each module imports
-`mdx-components.tsx`, which maps `Figure`. First load is therefore
-145.1 kB on `/`, `/projects` and `/projects/[slug]`, which leaves about
-5 kB under the ceiling. The numbers are re-baselined when Next.js is
+`mdx-components.tsx`, which maps `Figure` and `FigureGrid`. `/about`
+renders a `FigureGrid` directly. First load is therefore 145.1 kB on `/`,
+`/about`, `/projects` and `/projects/[slug]`, which leaves about 5 kB
+under the ceiling. The numbers are re-baselined when Next.js is
 upgraded.
 
 `next build` no longer prints bundle sizes (removed in Next 16), but it

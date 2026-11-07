@@ -183,13 +183,13 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 | `SiteFooter`     | As above                                                                       |
 | `SectionHeading` | H2 + optional one-line description + optional right-side action link           |
 | `ListSection`    | Heading + list of `ListItem`                                                   |
-| `ListItem`       | title (link) · meta (mono, right) · one paragraph · optional links             |
+| `ListItem`       | title (optionally a link) · meta (mono, right) · subtitle · one paragraph      |
 | `ProjectRow`     | Home: name — one line — year                                                   |
 | `Bio`            | Home: the short bio, 2–3 sentences with inline links, written as JSX           |
 | `ProjectCard`    | Projects page: name, year, summary, stack, links; screenshot when one exists   |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
 | `Figure`         | Photo or screenshot in a hairline border with a mono meta line below (§5.1)    |
-| `FigureGrid`     | Two or three `Figure`s in a row, separated by a hairline (§5.1)                |
+| `FigureGrid`     | Two or three photos as panes in one hairline frame (§5.1)                      |
 | `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
 | `MobileMenu`     | Client component. "Menu" button below `sm`; shows the header's nav list.       |
 | `Kbd`            | Inline keyboard hint in mono                                                   |
@@ -211,13 +211,17 @@ everything else.
   no radius, no hover effects. It carries `not-prose`, so inside an MDX
   body the typography plugin leaves it alone. Images load lazily; only an
   LCP image above the fold passes `preload`.
-- **`FigureGrid`:** two or three `Figure`s in a row with
-  `gap-px bg-border-subtle`, so the images are separated by a single
-  hairline, like panes in a tiled window. Each cell is `bg-bg`, which is
-  what leaves only the 1px gap showing. One column on mobile. Heights are
-  equal because a grid has one fixed aspect ratio (`aspect-[3/2]` by
-  default, `aspect-square` as the option) and its images are
-  `object-cover`.
+- **`FigureGrid`:** two or three photos as panes in one frame, like a
+  tiled window. It renders its own cells rather than nesting `Figure`,
+  whose border would double every hairline. The frame is
+  `border border-border-subtle` with `gap-px bg-border-subtle`; each cell
+  is `bg-bg`, so only the 1px gaps show and every edge is a single line.
+  A cell is the image, then the meta line inside the pane (`px-3 py-2`,
+  label style, optional right-aligned index). One column on mobile.
+  Heights are equal because a grid has one fixed aspect ratio
+  (`aspect-[3/2]` by default, `aspect-square` as the option): each image
+  is `next/image` `fill` in a `relative` aspect box, `object-cover`, with a
+  `sizes` value for one cell's width. It also carries `not-prose`.
 - **Treatment:** a uniform `saturate-[.85]`, so photos from different years
   and cameras sit together in both themes. Tokyo Night may add
   `brightness-[.95]`. No grayscale and no colour on hover; the site stays
@@ -254,11 +258,17 @@ the first or second paragraph and nowhere else in the block.
 Then `ListSection`s, each ending in a period:
 
 - `Engineering.` / `Infrastructure.` / `Learning.` — three pillars, one
-  paragraph each, a link each (GitHub, swadestack-k8s, reading list)
-- `Experience.` — role · company · years · one paragraph
-- `Education.` — KTH, B.Sc. Computer Engineering
-- `Reading.` — books/courses with year, one line each
+  paragraph each, a link each (GitHub, swadestack-k8s, reading list).
+  Each pillar is a `ListSection` with one `ListItem` whose title is the
+  link; the reading list link jumps to the `Reading.` section.
+- `Experience.` — role as the title, company and location as the
+  subtitle, years as meta, one paragraph
+- `Education.` — school, degree as the subtitle, years as meta
+- `Reading.` — books/courses with author and year, one line each
 - Closing CTA: `Continue to Projects →`
+
+The section data comes from `lib/site.ts` (`docs/03 §6`); the long bio and
+its figures are JSX in the page.
 
 Photos appear on this page only as `Figure` or `FigureGrid`, under the
 rhythm rule in §5.1.
@@ -309,6 +319,7 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
   declares its screenshot as `meta.image` (`src`, `alt`); the build fails
   if the file is missing.
 - Photos: WebP, at most 100 kB each, in `public/figures/`, served through
-  `next/image` with explicit `width` and `height`, a `sizes` value, and
-  lazy loading (the `next/image` default). Until the real photos exist,
+  `next/image` with a `sizes` value and lazy loading (the `next/image`
+  default). `Figure` passes explicit `width` and `height`; `FigureGrid`
+  uses `fill` inside its fixed aspect box. Until the real photos exist,
   placeholder files stand in and their meta lines read `TODO:`.
