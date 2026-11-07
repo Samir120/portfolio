@@ -1,5 +1,6 @@
 import type { MDXComponents } from "mdx/types";
 import { Figure } from "@/components/figure";
+import { FigureGrid } from "@/components/figure-grid";
 
 // Required by @next/mdx in the App Router. Global element-to-component
 // mappings for every MDX body go here.
@@ -7,6 +8,8 @@ import { Figure } from "@/components/figure";
 const components: MDXComponents = {
   // <Figure src alt width height label /> in a body, no import needed.
   Figure,
+  // <FigureGrid figures={[{ src, alt, label }, …]} /> with two or three.
+  FigureGrid,
 };
 
 export function useMDXComponents(): MDXComponents {
