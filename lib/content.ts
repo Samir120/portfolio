@@ -1,8 +1,8 @@
-// The only module that reads the filesystem. Lists content/projects/*.mdx
-// and public/projects/ once at module scope and loads each body with a
-// bundler-resolved import() (ADR-0002, ADR-0004).
+// The only module that reads content. Lists content/projects/*.mdx once at
+// module scope and loads each body with a bundler-resolved import()
+// (ADR-0002, ADR-0004).
 import "server-only";
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import type { MDXContent } from "mdx/types";
 import { parseProjectModule } from "@/lib/project-module";
@@ -15,29 +15,15 @@ export type Project = {
 };
 
 const PROJECTS_DIR = "content/projects";
-const SCREENSHOTS_DIR = "public/projects";
 
 const SLUGS = readdirSync(path.join(process.cwd(), PROJECTS_DIR))
   .filter((file) => file.endsWith(".mdx"))
   .map((file) => file.slice(0, -".mdx".length));
 
-// Public paths of the screenshots that exist, e.g. "/projects/leta.webp".
-const screenshotsDir = path.join(process.cwd(), SCREENSHOTS_DIR);
-const SCREENSHOTS = new Set(
-  existsSync(screenshotsDir)
-    ? readdirSync(screenshotsDir).map((file) => `/projects/${file}`)
-    : [],
-);
-
 async function loadProject(slug: string): Promise<Project> {
   const loaded: unknown = await import(`@/content/projects/${slug}.mdx`);
   const file = `${PROJECTS_DIR}/${slug}.mdx`;
-  const project = { slug, ...parseProjectModule(loaded, file) };
-  const { image } = project.meta;
-  if (image && !SCREENSHOTS.has(image.src)) {
-    throw new Error(`${file}: meta.image.src ${image.src} is not in public/`);
-  }
-  return project;
+  return { slug, ...parseProjectModule(loaded, file) };
 }
 
 // Newest first. Within a year, projects with `order` come first, lowest

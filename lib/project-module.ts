@@ -2,7 +2,7 @@
 // validated meta and body. Every error names the file and the field
 // (ADR-0005).
 import type { MDXContent } from "mdx/types";
-import type { ProjectImage, ProjectLinks, ProjectMeta } from "@/lib/types";
+import type { ProjectLinks, ProjectMeta } from "@/lib/types";
 
 const META_KEYS = [
   "title",
@@ -12,14 +12,8 @@ const META_KEYS = [
   "links",
   "featured",
   "order",
-  "image",
 ];
 const LINK_KEYS = ["live", "code"];
-const IMAGE_KEYS = ["src", "alt"];
-const IMAGE_SRC = /^\/projects\/[a-z0-9-]+\.webp$/;
-
-// Every screenshot is exported at this size (docs/02 §8).
-export const SCREENSHOT_SIZE = { width: 1600, height: 1000 } as const;
 
 function fail(file: string, field: string, problem: string): never {
   throw new Error(`${file}: ${field} ${problem}`);
@@ -76,16 +70,6 @@ function readLinks(value: unknown, file: string): ProjectLinks {
   return result;
 }
 
-// Checks the shape only; lib/content.ts checks that the file exists.
-function readImage(value: unknown, file: string): ProjectImage {
-  const image = readRecord(value, IMAGE_KEYS, file, "meta.image");
-  const src = readString(image.src, file, "meta.image.src");
-  if (!IMAGE_SRC.test(src)) {
-    fail(file, "meta.image.src", "must look like /projects/<name>.webp");
-  }
-  return { src, alt: readString(image.alt, file, "meta.image.alt") };
-}
-
 // Builds a new object from narrowed fields, so the compiler checks the
 // result against ProjectMeta instead of trusting a signature.
 function readMeta(value: unknown, file: string): ProjectMeta {
@@ -109,9 +93,6 @@ function readMeta(value: unknown, file: string): ProjectMeta {
   };
   if (meta.order !== undefined) {
     result.order = readInteger(meta.order, file, "meta.order");
-  }
-  if (meta.image !== undefined) {
-    result.image = readImage(meta.image, file);
   }
   return result;
 }

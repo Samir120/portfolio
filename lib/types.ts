@@ -7,12 +7,6 @@ export type ProjectLinks = {
   code?: string;
 };
 
-// A screenshot in public/projects/, 1600×1000 WebP (docs/02 §8).
-export type ProjectImage = {
-  src: string;
-  alt: string;
-};
-
 export type ProjectMeta = {
   title: string;
   summary: string;
@@ -21,5 +15,4 @@ export type ProjectMeta = {
   links: ProjectLinks;
   featured: boolean;
   order?: number;
-  image?: ProjectImage;
 };
