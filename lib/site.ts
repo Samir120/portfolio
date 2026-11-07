@@ -32,8 +32,8 @@ type Site = {
 const GITHUB = "https://github.com/Samir120";
 
 export const SITE = {
-  name: "Samir",
-  role: "Full-stack developer in Stockholm — React, TypeScript, Node.js, PostgreSQL",
+  name: "Samir Alami",
+  role: "Full-stack developer with a högskoleingenjör degree in computer engineering from KTH.",
   location: "Stockholm",
   email: "samiralami132@gmail.com",
   socials: [
@@ -43,17 +43,20 @@ export const SITE = {
   pillars: [
     {
       title: "Engineering",
-      summary: "TODO: one paragraph on how you build software.",
+      summary:
+        "Most of my own work lives on GitHub, and I try to build it the way I’d want to find it as a reader. Each project starts with a short written plan of what it should do and why, and the larger design decisions are recorded along the way. I let the tools carry part of the responsibility. In Rust, the type system keeps invalid data from being represented at all. In C++, tests run under sanitizers and formatting and static analysis are enforced automatically. Every push goes through a pipeline that checks it before it’s merged, so problems are found early, while they’re still small and easy to fix.",
       link: { label: "GitHub", href: GITHUB },
     },
     {
       title: "Infrastructure",
-      summary: "TODO: one paragraph on the cluster and the pipeline.",
+      summary:
+        "SwadeStack runs on a single-node k3s cluster that I set up and maintain myself. When I push to main, GitHub Actions checks and builds the frontend and backend, packages them as container images, and updates a separate GitOps repository. Argo CD then brings the staging environment in line with what’s in Git, while releasing to production stays a deliberate, manual step. Secrets are kept encrypted with Sealed Secrets, and public traffic reaches the cluster through a Cloudflare Tunnel. Prometheus and Grafana keep an eye on uptime, the database and disk space, and I’m notified by email if the site goes down, a certificate is close to expiring or a backup is missed. The database and uploaded files are backed up every night, and the steps to rebuild the cluster from scratch are written down.",
       link: { label: "swadestack-k8s", href: `${GITHUB}/swadestack-k8s` },
     },
     {
       title: "Learning",
-      summary: "TODO: one paragraph on what you are learning and how.",
+      summary:
+        "Reading technical books is a habit of mine, and it’s still how I learn most things. I read a book through, work the examples on my own machine, and then put what I’ve learned to use in a project of my own. C++ and Rust came to me this way, and later Kubernetes, Terraform, Argo CD and GitHub Actions. Next.js I learned from its official documentation, and this site is the result. At the moment I’m learning Go and working through Sebastian Raschka’s book on machine learning with PyTorch and scikit-learn. The reading list collects the books that have shaped how I work, along with what I’m reading now.",
       link: { label: "Reading list", href: "#reading" },
     },
   ],
@@ -99,5 +102,35 @@ export const SITE = {
       years: "2021–2025",
     },
   ],
-  reading: [{ title: "TODO: book or course", by: "TODO: author", year: 2026 }],
+  reading: [
+    {
+      title: "Machine Learning with PyTorch and Scikit-Learn",
+      by: "Sebastian Raschka, Yuxi Liu, Vahid Mirjalili",
+      year: 2026,
+    },
+    { title: "Next.js Documentation", by: "Vercel", year: 2026 },
+    { title: "The Linux Command Line", by: "William Shotts", year: 2026 }, // confirm year
+    {
+      title: "Argo CD: Up and Running",
+      by: "Andrew Block, Christian Hernandez",
+      year: 2026,
+    }, // confirm year
+    { title: "Learning GitHub Actions", by: "Brent Laster", year: 2026 }, // confirm year
+    {
+      title: "Kubernetes: Up and Running",
+      by: "Brendan Burns, Joe Beda, Kelsey Hightower, Lachlan Evenson",
+      year: 2026,
+    }, // confirm year
+    { title: "Terraform: Up & Running", by: "Yevgeniy Brikman", year: 2026 }, // confirm year
+    {
+      title: "Hacking: The Art of Exploitation",
+      by: "Jon Erickson",
+      year: 2026,
+    }, // confirm year
+    {
+      title: "C++ Primer",
+      by: "Stanley B. Lippman, Josée Lajoie, Barbara E. Moo",
+      year: 2026,
+    }, // confirm year
+  ],
 } as const satisfies Site;

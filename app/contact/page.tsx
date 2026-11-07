@@ -11,7 +11,8 @@ export default function ContactPage() {
         Contact.
       </h1>
       <p className={`mt-6 ${PARAGRAPH}`}>
-        TODO: one sentence on what to get in touch about.
+        I’m glad to discuss new projects, roles or anything you’ve seen here,
+        and I look forward to hearing from you.
       </p>
       <p className="mt-6">
         {/* A plain anchor: mailto: is not a route for next/link, and
@@ -22,9 +23,6 @@ export default function ContactPage() {
         >
           {SITE.email}
         </a>
-      </p>
-      <p className={`mt-6 text-text-secondary ${PARAGRAPH}`}>
-        TODO: one line on freelance availability, or delete this paragraph.
       </p>
       <div className="mt-12 sm:mt-16">
         <ListSection title="Socials.">
