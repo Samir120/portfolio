@@ -36,13 +36,13 @@ export default function AboutPage() {
             figures={[
               {
                 src: "/figures/samir-1.webp",
-                alt: "coding",
+                alt: "Selfie of Samir at his desk, with a dark-themed code editor open on the monitor behind him.",
                 label: "Stockholm · 2022",
                 index: "01",
               },
               {
                 src: "/figures/samir-2.webp",
-                alt: "exercising",
+                alt: "Samir standing with one hand on his hip in front of wooden wall bars at a gym.",
                 label: "Stockholm · 2023",
                 index: "02",
               },

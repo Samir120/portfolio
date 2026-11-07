@@ -51,20 +51,33 @@ const themeScript = `(function () {
   } catch (e) {}
 })();`;
 
+// `scroll-pt-20` keeps whatever the browser scrolls to (a focused link, an
+// anchor, the skip target) clear of the sticky header.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       data-theme={DEFAULT_THEME}
-      className={`${geist.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${jetbrainsMono.variable} h-full scroll-pt-20 antialiased`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col">
+        {/* A plain anchor: the browser's own fragment navigation moves
+            keyboard focus to <main>; next/link only scrolls (docs/04 §3). */}
+        <a
+          href="#main"
+          className="sr-only bg-bg px-3 py-2 text-sm focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-20"
+        >
+          Skip to content
+        </a>
         <SiteHeader />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 sm:px-6">
+        <main
+          id="main"
+          className="mx-auto w-full max-w-3xl flex-1 px-4 sm:px-6"
+        >
           {children}
         </main>
         <SiteFooter />

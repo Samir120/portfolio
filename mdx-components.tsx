@@ -10,6 +10,9 @@ const components: MDXComponents = {
   Figure,
   // <FigureGrid figures={[{ src, alt, label }, …]} /> with two or three.
   FigureGrid,
+  // A code block scrolls sideways when a line is wider than the measure;
+  // tabIndex lets a keyboard user focus it and scroll with the arrow keys.
+  pre: (props) => <pre {...props} tabIndex={0} />,
 };
 
 export function useMDXComponents(): MDXComponents {
