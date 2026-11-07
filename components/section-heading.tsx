@@ -14,7 +14,7 @@ export function SectionHeading({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+        <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
           {title}
         </h2>
         {action && (

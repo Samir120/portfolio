@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FigureGrid } from "@/components/figure-grid";
+import { Figure } from "@/components/figure";
 import { ListItem } from "@/components/list-item";
 import { ListSection } from "@/components/list-section";
+import { PageHeader } from "@/components/page-header";
+import { ReadingList } from "@/components/reading-list";
 import { SITE } from "@/lib/site";
 
-const PARAGRAPH = "text-[15px] leading-relaxed sm:text-base";
+const PARAGRAPH = "text-[15px] leading-relaxed";
 
 // The layout's template appends the name; the description is inherited.
 export const metadata: Metadata = {
@@ -16,10 +18,8 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <article className="py-12 sm:py-16">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        About Me.
-      </h1>
-      <div className="mt-6 space-y-4">
+      <PageHeader path="~/about" title="About Me." />
+      <div className="mt-8 space-y-4">
         <p className={PARAGRAPH}>
           In my day-to-day work, I build web features that run in production,
           where it matters that things keep working for the people using them.
@@ -32,21 +32,12 @@ export default function AboutPage() {
           toward infrastructure and systems programming.
         </p>
         <div className="py-4">
-          <FigureGrid
-            figures={[
-              {
-                src: "/figures/samir-1.webp",
-                alt: "Selfie of Samir at his desk, with a dark-themed code editor open on the monitor behind him.",
-                label: "Stockholm · 2022",
-                index: "01",
-              },
-              {
-                src: "/figures/samir-2.webp",
-                alt: "Samir standing with one hand on his hip in front of wooden wall bars at a gym.",
-                label: "Stockholm · 2023",
-                index: "02",
-              },
-            ]}
+          <Figure
+            src="/figures/samir-2.webp"
+            alt="Samir standing with one hand on his hip in front of wooden wall bars at a gym."
+            width={1500}
+            height={1000}
+            label="Stockholm · 2023"
           />
         </div>
         <p className={PARAGRAPH}>
@@ -63,13 +54,18 @@ export default function AboutPage() {
         </p>
       </div>
       <div className="mt-12 space-y-12 sm:mt-16 sm:space-y-16">
-        {SITE.pillars.map((pillar) => (
-          <ListSection key={pillar.title} title={`${pillar.title}.`}>
-            <ListItem title={pillar.link.label} href={pillar.link.href}>
+        <ListSection title="Focus.">
+          {SITE.pillars.map((pillar) => (
+            <ListItem
+              key={pillar.title}
+              title={pillar.title}
+              href={pillar.link.href}
+              meta={pillar.link.label}
+            >
               {pillar.summary}
             </ListItem>
-          </ListSection>
-        ))}
+          ))}
+        </ListSection>
         <ListSection title="Experience.">
           {SITE.experience.map((position) => (
             <ListItem
@@ -92,16 +88,7 @@ export default function AboutPage() {
             />
           ))}
         </ListSection>
-        <ListSection title="Reading." id="reading">
-          {SITE.reading.map((item) => (
-            <ListItem
-              key={item.title}
-              title={item.title}
-              subtitle={item.by}
-              meta={String(item.year)}
-            />
-          ))}
-        </ListSection>
+        <ReadingList title="Reading." id="reading" books={SITE.reading} />
       </div>
       <p className="mt-12 border-t border-border-subtle pt-8 text-sm">
         <Link

@@ -5,11 +5,11 @@
 // https://nextjs.org/docs/app/api-reference/functions/image-response
 
 const COLOURS = {
-  bg: "#1a1b26",
+  bg: "#16161e",
   borderSubtle: "#24283b",
   text: "#c0caf5",
   textSecondary: "#a9b1d6",
-  textMuted: "#8b93b8",
+  textMuted: "#9aa5ce",
   brand: "#9ece6a",
 } as const;
 

@@ -1,21 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "@/components/external-link";
-import { SCREENSHOT_SIZE } from "@/lib/project-module";
 import type { ProjectMeta } from "@/lib/types";
 
 const LINK_CLASS = "text-text-secondary hover:text-text";
 
-// A hairline list item; with a screenshot it becomes a bordered card with
-// the image edge-to-edge (docs/02 §4, §6.3).
-export function ProjectCard({
-  slug,
-  meta,
-}: {
+type ProjectCardProps = {
   slug: string;
+  index: number;
   meta: ProjectMeta;
-}) {
-  const { image } = meta;
+};
+
+// A project as a terminal-style window: a mono title bar with the index,
+// path and year, then the title, summary, stack and links (docs/02 §6.3).
+// Every card has the same shape; screenshots live on the case study.
+export function ProjectCard({ slug, index, meta }: ProjectCardProps) {
   const separator = (
     <span aria-hidden="true" className="text-text-muted">
       ·
@@ -23,46 +21,34 @@ export function ProjectCard({
   );
 
   return (
-    <li
-      className={
-        image
-          ? "my-6 border border-border-subtle"
-          : "border-b border-border-subtle py-6"
-      }
-    >
-      {image && (
-        <Image
-          src={image.src}
-          alt={image.alt}
-          width={SCREENSHOT_SIZE.width}
-          height={SCREENSHOT_SIZE.height}
-          sizes="(min-width: 48rem) 48rem, 100vw"
-          className="h-auto w-full border-b border-border-subtle"
-        />
-      )}
-      <div className={image ? "p-4 sm:p-6" : undefined}>
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-lg font-semibold">
-            <Link href={`/projects/${slug}`} className="hover:text-brand">
-              {meta.title}
-            </Link>
-          </h2>
-          <span className="font-mono text-xs tracking-wider text-text-muted">
-            {meta.year}
-          </span>
-        </div>
+    <li className="border border-border-subtle hover:border-border-strong">
+      <div className="flex items-baseline justify-between gap-4 border-b border-border-subtle bg-bg-deep px-4 py-2 font-mono text-xs tracking-wider text-text-muted sm:px-6">
+        <span aria-hidden="true" className="truncate">
+          {String(index).padStart(2, "0")}
+          <span className="ml-3">~/projects/{slug}</span>
+        </span>
+        <span className="shrink-0">{meta.year}</span>
+      </div>
+      <div className="p-4 sm:p-6">
+        <h2 className="text-base font-semibold">
+          <Link href={`/projects/${slug}`} className="hover:text-brand">
+            {meta.title}
+          </Link>
+        </h2>
         <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
           {meta.summary}
         </p>
-        <ul
-          aria-label="Stack"
-          className="mt-3 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs tracking-wider text-text-muted uppercase"
-        >
+        <ul aria-label="Stack" className="mt-4 flex flex-wrap gap-2">
           {meta.stack.map((tag) => (
-            <li key={tag}>{tag}</li>
+            <li
+              key={tag}
+              className="border border-border-subtle px-2 py-0.5 font-mono text-xs tracking-wider text-text-secondary uppercase"
+            >
+              {tag}
+            </li>
           ))}
         </ul>
-        <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
+        <p className="mt-5 flex flex-wrap items-baseline gap-x-2 text-sm">
           {meta.links.live && (
             <>
               <ExternalLink href={meta.links.live} className={LINK_CLASS}>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Bio } from "@/components/bio";
+import { Portrait } from "@/components/portrait";
 import { ProjectRow } from "@/components/project-row";
 import { SectionHeading } from "@/components/section-heading";
 import { listProjects } from "@/lib/content";
@@ -17,13 +18,21 @@ export default async function Home() {
   return (
     <>
       <section className="py-12 sm:py-16">
-        <p className="font-mono text-xs tracking-wider text-text-muted uppercase">
-          Hi there, I&apos;m
-        </p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-          {SITE.name}
-        </h1>
-        <p className="mt-4 text-[15px] leading-relaxed text-text-secondary">
+        <div className="flex items-center gap-5 sm:gap-6">
+          <Portrait
+            src="/figures/samir-1.webp"
+            alt="Selfie of Samir at his desk, with a dark-themed code editor open on the monitor behind him."
+          />
+          <div>
+            <p className="font-mono text-xs tracking-wider text-text-muted uppercase">
+              Hi there, I&apos;m
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+              {SITE.name}
+            </h1>
+          </div>
+        </div>
+        <p className="mt-6 text-[15px] leading-relaxed text-text-secondary">
           {SITE.role}
         </p>
         <div className="mt-6">
@@ -45,16 +54,17 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-      <section className="py-12 sm:py-16">
+      <section className="pb-12 sm:pb-16">
         <SectionHeading
           title="Selected projects"
           action={{ href: "/projects", label: "All projects" }}
         />
         <ul className="mt-6 border-t border-border-subtle">
-          {projects.map(({ slug, meta }) => (
+          {projects.map(({ slug, meta }, position) => (
             <ProjectRow
               key={slug}
               href={`/projects/${slug}`}
+              index={position + 1}
               title={meta.title}
               summary={meta.summary}
               year={meta.year}

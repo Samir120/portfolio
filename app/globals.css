@@ -17,24 +17,28 @@
   --color-brand: var(--t-brand);
   --color-brand-soft: var(--t-brand-soft);
   --color-brand-ink: var(--t-brand-ink);
+  --color-photo-shadow: var(--t-photo-shadow);
+  --color-photo-light: var(--t-photo-light);
 
   --radius-*: initial;
 }
 
 [data-theme="tokyo-night"] {
-  --t-bg-deep: #13141c;
-  --t-bg: #1a1b26;
-  --t-surface: #1f2230;
+  --t-bg-deep: #0f0f14;
+  --t-bg: #16161e;
+  --t-surface: #1a1b26;
   --t-surface-2: #292e42;
   --t-border-subtle: #24283b;
   --t-border-strong: #414868;
   --t-text: #c0caf5;
   --t-text-secondary: #a9b1d6;
-  --t-text-muted: #8b93b8;
+  --t-text-muted: #9aa5ce;
   --t-brand: #9ece6a;
   --t-brand-soft: #9ece6a1f;
   --t-brand-ink: #0c0e10;
   --t-selection: #292e42;
+  --t-photo-shadow: #16161e;
+  --t-photo-light: #c0caf5;
   color-scheme: dark;
 }
 
@@ -48,10 +52,12 @@
   --t-text: #000000;
   --t-text-secondary: #383838;
   --t-text-muted: #4a4a4a;
-  --t-brand: #6e6e6e;
-  --t-brand-soft: #6e6e6e1f;
+  --t-brand: #555555;
+  --t-brand-soft: #5555551f;
   --t-brand-ink: #ffffff;
   --t-selection: #c0c0c0;
+  --t-photo-shadow: #1a1a1a;
+  --t-photo-light: #f5f5f5;
   color-scheme: light;
 }
 
@@ -76,9 +82,33 @@
   --tw-prose-td-borders: var(--color-border-subtle);
 }
 
+/* Body text is mono and headings are sans (docs/02 §2). */
 @layer base {
   body {
-    @apply bg-bg font-sans text-text transition-colors duration-150 motion-reduce:transition-none;
+    @apply bg-bg font-mono text-text transition-colors duration-150 motion-reduce:transition-none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans text-balance;
+  }
+
+  /* Running text avoids a lone word on its last line. */
+  p,
+  li,
+  dd {
+    @apply text-pretty;
+  }
+
+  /* Tailwind v4's preflight gives buttons the default cursor; this is the
+     upgrade guide's rule for keeping the pointer. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 
   ::selection {

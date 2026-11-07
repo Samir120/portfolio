@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "@/components/external-link";
-import { Figure } from "@/components/figure";
+import { PageHeader } from "@/components/page-header";
 import { Prose } from "@/components/prose";
+import { displayUrl } from "@/lib/display-url";
 import { getProject, listProjects } from "@/lib/content";
-import { SCREENSHOT_SIZE } from "@/lib/project-module";
 
-const LINK_CLASS = "text-text-secondary hover:text-text";
+const LABEL = "font-mono text-xs tracking-wider text-text-muted uppercase";
+const ROW =
+  "grid gap-2 border-b border-border-subtle px-4 py-4 last:border-b-0 sm:grid-cols-[8rem_1fr] sm:items-baseline sm:gap-6 sm:px-6";
+const LINK =
+  "text-text underline decoration-border-strong underline-offset-4 wrap-anywhere hover:decoration-brand";
 
 // One page per MDX file. The list is complete, so every case study is
 // prerendered and ensureStatic accepts the route.
@@ -41,60 +45,60 @@ export default async function ProjectPage({
   if (!project) notFound();
   const { meta, Body } = project;
 
-  const separator = (
-    <span aria-hidden="true" className="text-text-muted">
-      ·
-    </span>
-  );
-
   return (
     <article className="py-12 sm:py-16">
-      <header className="border-b border-border-subtle pb-8">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          {meta.title}
-        </h1>
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-xs tracking-wider text-text-muted uppercase">
-          <span>{meta.year}</span>
-          <ul aria-label="Stack" className="flex flex-wrap gap-x-3 gap-y-1">
-            {meta.stack.map((tag) => (
-              <li key={tag}>{tag}</li>
-            ))}
-          </ul>
+      <PageHeader
+        path={`~/projects/${slug}`}
+        title={meta.title}
+        lead={meta.summary}
+      />
+      <dl className="mt-10 border border-border-subtle">
+        <div className={ROW}>
+          <dt className={LABEL}>Year</dt>
+          <dd className="font-mono text-sm text-text-secondary">{meta.year}</dd>
         </div>
-        {(meta.links.live || meta.links.code) && (
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
-            {meta.links.live && (
-              <ExternalLink href={meta.links.live} className={LINK_CLASS}>
-                Live
+        <div className={ROW}>
+          <dt className={LABEL}>Stack</dt>
+          <dd>
+            <ul className="flex flex-wrap gap-2">
+              {meta.stack.map((tag) => (
+                <li
+                  key={tag}
+                  className="border border-border-subtle px-2 py-0.5 font-mono text-xs tracking-wider text-text-secondary uppercase"
+                >
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+        {meta.links.live && (
+          <div className={ROW}>
+            <dt className={LABEL}>Live</dt>
+            <dd>
+              <ExternalLink href={meta.links.live} className={LINK}>
+                {displayUrl(meta.links.live)}
               </ExternalLink>
-            )}
-            {meta.links.live && meta.links.code && separator}
-            {meta.links.code && (
-              <ExternalLink href={meta.links.code} className={LINK_CLASS}>
-                Code
-              </ExternalLink>
-            )}
-          </p>
+            </dd>
+          </div>
         )}
-      </header>
-      {meta.image && (
-        <div className="mt-10">
-          <Figure
-            src={meta.image.src}
-            alt={meta.image.alt}
-            width={SCREENSHOT_SIZE.width}
-            height={SCREENSHOT_SIZE.height}
-            label={`${meta.title} · ${meta.year}`}
-            preload
-          />
-        </div>
-      )}
-      <div className="mt-10">
+        {meta.links.code && (
+          <div className={ROW}>
+            <dt className={LABEL}>Code</dt>
+            <dd>
+              <ExternalLink href={meta.links.code} className={LINK}>
+                {displayUrl(meta.links.code)}
+              </ExternalLink>
+            </dd>
+          </div>
+        )}
+      </dl>
+      <div className="mt-14">
         <Prose>
           <Body />
         </Prose>
       </div>
-      <p className="mt-12 border-t border-border-subtle pt-8 text-sm">
+      <p className="mt-14 border-t border-border-subtle pt-8 text-sm">
         <Link
           href="/contact"
           className="underline decoration-border-strong underline-offset-4 hover:decoration-brand"

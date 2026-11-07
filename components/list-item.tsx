@@ -24,7 +24,7 @@ export function ListItem({
   return (
     <li className="border-b border-border-subtle py-4">
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-base font-semibold">
           {href === undefined ? (
             title
           ) : isExternal ? (

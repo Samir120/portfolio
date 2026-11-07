@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import { ProjectCard } from "@/components/project-card";
 import { listProjects } from "@/lib/content";
 
@@ -13,12 +14,15 @@ export default async function ProjectsPage() {
 
   return (
     <section className="py-12 sm:py-16">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Projects.
-      </h1>
-      <ul className="mt-8 border-t border-border-subtle">
-        {projects.map(({ slug, meta }) => (
-          <ProjectCard key={slug} slug={slug} meta={meta} />
+      <PageHeader path="~/projects" title="Projects." />
+      <ul className="mt-10 space-y-6">
+        {projects.map(({ slug, meta }, position) => (
+          <ProjectCard
+            key={slug}
+            slug={slug}
+            index={position + 1}
+            meta={meta}
+          />
         ))}
       </ul>
     </section>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MobileMenu } from "@/components/mobile-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SITE } from "@/lib/site";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
@@ -9,33 +10,26 @@ const NAV_ITEMS = [
   { href: "/contact", label: "Contact" },
 ] as const;
 
+// Sticky bar: the wordmark (a brand slash and the name), the navigation and
+// the theme button, set apart by a hairline.
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-10 bg-bg/90 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-border-subtle bg-bg/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          aria-label="Home"
-          className="font-mono text-text hover:text-brand"
+          className="group flex items-baseline gap-2 font-mono text-sm text-text"
         >
-          /
+          <span aria-hidden="true" className="text-brand">
+            /
+          </span>
+          <span className="group-hover:text-brand">{SITE.name}</span>
         </Link>
         <div className="flex items-center gap-4 sm:gap-6">
-          <MobileMenu>
-            <ul className="flex flex-col sm:flex-row sm:gap-6">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="block py-2 text-sm text-text-secondary hover:text-text sm:py-0"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </MobileMenu>
-          <ThemeToggle />
+          <MobileMenu items={NAV_ITEMS} />
+          <div className="border-l border-border-subtle pl-4 sm:pl-6">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>

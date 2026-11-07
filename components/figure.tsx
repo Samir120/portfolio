@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Duotone } from "@/components/duotone";
 
 type FigureProps = {
   src: string;
@@ -6,14 +7,13 @@ type FigureProps = {
   width: number;
   height: number;
   label: string;
-  index?: string;
   sizes?: string;
   preload?: boolean;
 };
 
-// A photo or screenshot in a hairline border with one mono meta line below
-// (docs/02 §5.1). `not-prose` keeps the typography plugin's image and
-// caption styles off it inside an MDX body.
+// A photo in the theme's two photo colours, in a hairline frame, with its
+// meta line in a mono band underneath (docs/02 §5.1). `not-prose` keeps the
+// typography plugin's styles off it inside an MDX body.
 // https://nextjs.org/docs/app/api-reference/components/image
 export function Figure({
   src,
@@ -21,13 +21,12 @@ export function Figure({
   width,
   height,
   label,
-  index,
   sizes = "(min-width: 48rem) 48rem, 100vw",
   preload = false,
 }: FigureProps) {
   return (
-    <figure className="not-prose">
-      <div className="border border-border-subtle">
+    <figure className="not-prose border border-border-subtle">
+      <Duotone>
         <Image
           src={src}
           alt={alt}
@@ -35,12 +34,11 @@ export function Figure({
           height={height}
           sizes={sizes}
           preload={preload}
-          className="h-auto w-full saturate-[.85]"
+          className="block h-auto w-full"
         />
-      </div>
-      <figcaption className="mt-2 flex justify-between gap-4 font-mono text-xs tracking-wider text-text-muted uppercase">
-        <span>{label}</span>
-        {index && <span>{index}</span>}
+      </Duotone>
+      <figcaption className="border-t border-border-subtle bg-bg-deep px-4 py-2 font-mono text-xs tracking-wider text-text-muted uppercase">
+        {label}
       </figcaption>
     </figure>
   );
