@@ -115,28 +115,28 @@ export const SITE = {
       year: 2026,
     },
     { title: "Next.js Documentation", by: "Vercel", year: 2026 },
-    { title: "The Linux Command Line", by: "William Shotts", year: 2026 }, // confirm year
+    { title: "The Linux Command Line", by: "William Shotts", year: 2026 },
     {
       title: "Argo CD: Up and Running",
       by: "Andrew Block, Christian Hernandez",
       year: 2026,
-    }, // confirm year
-    { title: "Learning GitHub Actions", by: "Brent Laster", year: 2026 }, // confirm year
+    },
+    { title: "Learning GitHub Actions", by: "Brent Laster", year: 2026 },
     {
       title: "Kubernetes: Up and Running",
       by: "Brendan Burns, Joe Beda, Kelsey Hightower, Lachlan Evenson",
       year: 2026,
-    }, // confirm year
-    { title: "Terraform: Up & Running", by: "Yevgeniy Brikman", year: 2026 }, // confirm year
+    },
+    { title: "Terraform: Up & Running", by: "Yevgeniy Brikman", year: 2026 },
     {
       title: "Hacking: The Art of Exploitation",
       by: "Jon Erickson",
       year: 2026,
-    }, // confirm year
+    },
     {
       title: "C++ Primer",
       by: "Stanley B. Lippman, Josée Lajoie, Barbara E. Moo",
-      year: 2026,
-    }, // confirm year
+      year: 2025,
+    },
   ],
 } as const satisfies Site;
