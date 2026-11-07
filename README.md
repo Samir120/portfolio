@@ -64,7 +64,7 @@ semantic token, so a theme is one block of CSS variables. The full spec is
 ```
 app/          routes and Next.js file conventions only
 components/   shared UI, one component per file
-content/      MDX — projects, writing
+content/      MDX — projects
 lib/          pure TypeScript — site facts, content loader, themes
 public/       images, CV
 docs/         specification and ADRs

@@ -192,7 +192,7 @@ py-4`, not a card. Cards exist only for project screenshots, and are
 | `ListSection`    | Heading + list of `ListItem`                                                   |
 | `ListItem`       | title (optionally a link) · meta (mono, right) · subtitle · one paragraph      |
 | `ProjectRow`     | Home: name — one line — year                                                   |
-| `Bio`            | Home: the short bio, 2–3 sentences with inline links, written as JSX           |
+| `Bio`            | Home: the short bio, 2–3 sentences, written as JSX                             |
 | `ProjectCard`    | Projects page: name, year, summary, stack, links; screenshot when one exists   |
 | `Prose`          | Typography wrapper for MDX bodies (`@tailwindcss/typography` mapped to tokens) |
 | `Figure`         | Photo or screenshot in a hairline border with a mono meta line below (§5.1)    |
@@ -245,9 +245,9 @@ everything else.
 
 1. Eyebrow, mono: `Hi there, I'm`
 2. H1: name
-3. One line, secondary: `Full-stack developer in Stockholm — React,
-TypeScript, Node.js, PostgreSQL`
-4. Bio, 2–3 sentences, with inline links
+3. One line, secondary: the role line from `lib/site.ts`, which is also the
+   default description and the line on the Open Graph card
+4. Bio, 2–3 sentences
 5. Actions: `Get in touch` (brand fill, square) · `About me →` (text link)
 6. `Selected projects` — 3–4 `ProjectRow`s, action link `All projects →`
 7. `Writing` — `ListItem`s with date right-aligned; hidden until 2 posts

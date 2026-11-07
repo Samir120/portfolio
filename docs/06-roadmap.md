@@ -107,12 +107,13 @@ Goal: everything a search engine, a link preview, or a screen reader needs.
 - `prefers-reduced-motion` honoured.
 - Exit: Lighthouse Accessibility 100 locally on all routes.
 
-### T10 — Writing route (hidden) and copy pass
+### T10 — Copy pass and the writing decision
 
-- `app/writing/page.tsx`, `[slug]/page.tsx` sharing the MDX pipeline;
-  excluded from nav and sitemap until two posts exist.
 - Replace every remaining `TODO:` in copy.
-- Decide Q4.
+- Decide Q4. The writing routes were planned here, but with Cache
+  Components a `generateStaticParams` that returns no params fails the
+  build, so `/writing/[slug]` cannot exist before its first post. They
+  arrive with it (Q4).
 - Exit: no `TODO:` left on any public page.
 
 ## M4 · Weeks 7–8 — Ship
@@ -185,7 +186,8 @@ ingress,kustomization}.yaml`, `argocd/applications/portfolio.yaml`,
 
 - Swedish translation with a header toggle.
 - More themes (Catppuccin, Nord, Gruvbox) as `[data-theme]` blocks.
-- `/writing` made public once two posts exist.
+- `/writing`: routes and pipeline with the first post, public with the
+  second (Q4).
 - `/uses` page (tools, editor config) — cheap and popular with developers.
 - A `/now` page.
 - Plausible or Umami analytics, self-hosted on the cluster.
@@ -205,7 +207,11 @@ changes a rule, in an ADR.
 - **Q3 Home projects: cards with screenshots or text rows.** Text rows on
   the home page. `/projects` uses `ProjectCard`, which shows a screenshot
   once one exists (`docs/02 §6.3`). Closed at T4.
-- **Q4 Writing section.** Ship hidden until two posts exist. Decide at T10.
+- **Q4 Writing section.** `app/writing/page.tsx`, `[slug]/page.tsx`, the
+  post metadata type and its build-time guard arrive in one commit with the
+  first post, so they are built and verified against real content. Until
+  the second post they stay hidden: not in the nav, not in the sitemap, not
+  on the home page. Closed at T10.
 - **Q5 Contact form vs `mailto:`.** `mailto:` link plus socials, no form. A
   form would need an API route and spam handling; not worth it in v1.
   Closed at T7.

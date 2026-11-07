@@ -42,7 +42,7 @@ portfolio/
 │   │   └── [slug]/
 │   │       ├── page.tsx      # generateStaticParams + dynamic MDX import
 │   │       └── opengraph-image.tsx # own generateStaticParams
-│   ├── writing/              # M3, ships hidden
+│   ├── writing/              # with the first post (docs/06 Q4)
 │   └── api/health/route.ts   # GET 200 for k8s probes (M4)
 ├── components/               # shared UI, flat; one component per file
 │   ├── site-header.tsx
@@ -65,13 +65,13 @@ portfolio/
 │   ├── projects/
 │   │   ├── swadestack.mdx
 │   │   └── …
-│   └── writing/
+│   └── writing/              # with the first post (docs/06 Q4)
 ├── lib/                      # pure TS, no React
 │   ├── site.ts               # SITE_URL; name, role, socials, location, email
 │   ├── content.ts            # readdir + import + sort; the only content reader
 │   ├── project-module.ts     # validates an imported MDX module (ADR-0005)
 │   ├── themes.ts             # theme ids and labels
-│   └── types.ts              # ProjectMeta, PostMeta
+│   └── types.ts              # ProjectMeta; PostMeta with the first post
 ├── assets/fonts/             # Geist TTFs + OFL.txt for next/og, not served
 ├── public/
 │   ├── projects/*.webp
@@ -251,9 +251,9 @@ location, email, CV path, and the structured sections of the about page
 line is a one-line change in one file. Nothing in `app/` contains a
 hard-coded personal fact.
 
-The two bios are the exception to "one file". They are prose with inline
-links, so they are written as JSX instead of as strings in `lib/site.ts`
-that would need a parser: the short bio in a Server Component
+The two bios are the exception to "one file". They are prose, written as
+JSX so that a link or emphasis can be added without a string format and a
+parser in `lib/site.ts`: the short bio in a Server Component
 (`components/bio.tsx`), the long bio and its photos in
 `app/about/page.tsx`, the only page that shows them. `lib/` stays free of
 React.
