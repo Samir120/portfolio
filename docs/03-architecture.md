@@ -123,7 +123,8 @@ prerendered has to be cached, deferred, or explicitly made request-time.
 All pages are Server Components. There is no `fetch()` anywhere. The two
 client components (`ThemeToggle`, `MobileMenu`) receive no data: the first
 touches `document` and `localStorage`, the second holds the menu's open
-state.
+state. The only other client code is the framework's: `next/image` ships
+its own client component (`docs/05 §2`).
 
 One value is cached: the copyright year in `SiteFooter`. A prerendered
 route may not read the clock, so the year comes from a `'use cache'`
@@ -140,16 +141,23 @@ route reads uncached data, runtime data (`cookies()`, `headers()`,
 sit outside the layout tree, which is why `/api/health` can opt into
 request-time rendering with `connection()` without touching the rule.
 
+`dynamicParams` is route segment config and is not available under Cache
+Components, so `/projects/[slug]` rejects an unknown slug by calling
+`notFound()` in the page. That request renders once, returns `404` with
+`noindex`, and is cached like any other path. The not-found UI for it
+arrives in the RSC payload, so without JavaScript the response body is
+empty; the top-level 404 (`/_not-found`) is prerendered and unaffected.
+
 ## 4. Content pipeline (ADR-0002, ADR-0005)
 
 ```
 content/projects/swadestack.mdx
-  export const meta = { title, summary, year, stack, links, featured, order? }
+  export const meta = { title, summary, year, stack, links, featured, order?, image? }
   # Problem … ## Architecture … (body)
         │
         ▼
 lib/content.ts
-  readdirSync at module scope → slugs
+  readdirSync at module scope → slugs, and public/projects/ → screenshots
   listProjects()   dynamic import of each file → parseProjectModule → sort
   getProject(slug) dynamic import of one file → { meta, Body }
         │
@@ -157,7 +165,7 @@ lib/content.ts
 app/projects/[slug]/page.tsx
   generateStaticParams() ← listProjects()
   generateMetadata()     ← meta
-  default export         ← <Prose><Body /></Prose>
+  default export         ← <Figure> (meta.image) + <Prose><Body /></Prose>
 ```
 
 - Metadata is a **named export from the MDX file**, a plain JavaScript
@@ -168,6 +176,12 @@ app/projects/[slug]/page.tsx
   build instead of leaving a missing line on the page (ADR-0005). No
   frontmatter, no `gray-matter`, no remote MDX. This is the pattern
   documented under "Using dynamic imports" on the Next.js MDX page.
+- `meta.image` (`src`, `alt`) declares a screenshot. The guard checks its
+  shape; `lib/content.ts` fails the build if the file is not in
+  `public/projects/`.
+- Bodies are CommonMark plus GitHub Flavored Markdown (tables) through
+  `remark-gfm`, passed to `createMDX` by name because Turbopack cannot
+  receive JavaScript functions.
 - Order is newest first by `year`. Within a year, projects with the
   optional `order` field come first, lowest first; the rest follow in
   title order.

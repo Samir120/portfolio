@@ -60,8 +60,12 @@ Measured on `/` and on `/projects/swadestack`, mobile profile.
 The JS budget is a ceiling on the whole first load, most of which is the
 framework. At Next.js 16.4.5 the runtime alone is 138.4 kB gzipped,
 measured with both client components removed; the two client components
-add 0.9 kB. The ceiling leaves about 11 kB for the site's own client code
-and is re-baselined when Next.js is upgraded.
+add 0.9 kB. `next/image` adds 5.8 kB, and it reaches every route that
+loads an MDX module, `/` included: each module imports
+`mdx-components.tsx`, which maps `Figure`. First load is therefore
+145.1 kB on `/`, `/projects` and `/projects/[slug]`, which leaves about
+5 kB under the ceiling. The numbers are re-baselined when Next.js is
+upgraded.
 
 `next build` no longer prints bundle sizes (removed in Next 16), but it
 writes the first-load chunks of every route to
@@ -88,8 +92,9 @@ them, in an interactive view.
 - **Content validation.** `lib/project-module.ts` throws at build if a
   file's `meta` is missing a required field, has a field of the wrong type
   or has an unknown one, and the error names the file and the field
-  (ADR-0005). `tsc` cannot do this: it does not read `.mdx`. A bad MDX file
-  cannot produce a deployed page.
+  (ADR-0005). `tsc` cannot do this: it does not read `.mdx`.
+  `lib/content.ts` also throws if `meta.image` names a file that is not in
+  `public/projects/`. A bad MDX file cannot produce a deployed page.
 - **Link integrity.** Internal links use typed route strings from
   `lib/routes.ts` (added when there are more than five). Until then, the
   smoke test covers it.

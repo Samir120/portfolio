@@ -144,6 +144,12 @@ pass 4.5:1 in both themes. Tokyo Night `text-muted` measures 5.7:1 on `bg`,
 5.2:1 on `surface` and 4.45:1 on `surface-2`. The last one fails, so muted
 text never sits on a `surface-2` background; don't make the token lighter.
 
+The typography plugin that styles MDX bodies is coloured the same way:
+`@utility prose-tokens` in `globals.css` sets its `--tw-prose-*` variables
+to the semantic tokens (body `text-secondary`, headings and links `text`,
+code blocks on `surface`). `prose-invert` is never used; a theme switch
+recolours prose through the tokens.
+
 Further themes (Catppuccin, Nord, Gruvbox…) are additional `[data-theme]`
 blocks and an entry in `lib/themes.ts`. Not in v1.
 
@@ -162,8 +168,9 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
   inside a list section.
 - **Borders over boxes.** A list item is `border-b border-border-subtle
 py-4`, not a card. Cards exist only for project screenshots, and are
-  `border border-border-subtle` with the image edge-to-edge. Photos use
-  `Figure` (§5.1), which follows the same rule.
+  `border border-border-subtle` with the image edge-to-edge and the text in
+  `p-4 sm:p-6` below it; `my-6` keeps a card's border clear of its hairline
+  neighbours. Photos use `Figure` (§5.1), which follows the same rule.
 - **Mobile:** single column always. Below `sm` the header collapses to
   wordmark + a text "Menu" toggle + theme button; no hamburger icon. The
   toggle opens the same nav list in a panel under the header.
@@ -200,7 +207,10 @@ everything else.
   `border border-border-subtle`, the image edge-to-edge inside the border.
   Below it sits one meta line in the label style of §2, left-aligned, for
   example `STOCKHOLM · 2024`, with an optional right-aligned index such as
-  `01`. No captions in prose, no shadows, no radius, no hover effects.
+  `01` (the `label` and `index` props). No captions in prose, no shadows,
+  no radius, no hover effects. It carries `not-prose`, so inside an MDX
+  body the typography plugin leaves it alone. Images load lazily; only an
+  LCP image above the fold passes `preload`.
 - **`FigureGrid`:** two or three `Figure`s in a row with
   `gap-px bg-border-subtle`, so the images are separated by a single
   hairline, like panes in a tiled window. Each cell is `bg-bg`, which is
@@ -259,11 +269,14 @@ H1 `Projects.` List of `ProjectCard`, newest first; within a year, the
 order in `docs/03 §4`. Each: name, year, one paragraph, stack tags in mono,
 `Live ↗` · `Code ↗` · `Case study →`, the first two only when the link
 exists. A project without a screenshot is a hairline list item like any
-other; with one, its card gains the image and the border of §4.
+other; with one (`meta.image`), its card gains the image and the border of
+§4. The image is not a link; the title and `Case study →` already are.
 
-Case study page: H1, meta line (year · stack · links), then MDX body with
-fixed headings in this order: **Problem · Architecture · Decisions · Results
-· What I'd change**. Closing CTA: `Continue to Contact →`.
+Case study page: H1, meta line (year · stack · links), the screenshot as a
+`Figure` when the project has one (meta line `<TITLE> · <YEAR>`, preloaded
+as the page's LCP image), then MDX body with fixed headings in this order:
+**Problem · Architecture · Decisions · Results · What I'd change**. Closing
+CTA: `Continue to Contact →`.
 
 ### 6.4 Contact `/contact`
 
@@ -292,7 +305,9 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
 - Open Graph image: generated per route with `next/og` (`opengraph-image.tsx`),
   Tokyo Night background, name + title in Geist, no photo.
 - Project screenshots: 1600×1000 WebP, under 150 kB each, in
-  `public/projects/<slug>.webp`, served through `next/image`.
+  `public/projects/<slug>.webp`, served through `next/image`. A project
+  declares its screenshot as `meta.image` (`src`, `alt`); the build fails
+  if the file is missing.
 - Photos: WebP, at most 100 kB each, in `public/figures/`, served through
   `next/image` with explicit `width` and `height`, a `sizes` value, and
   lazy loading (the `next/image` default). Until the real photos exist,

@@ -81,8 +81,9 @@ Theme = (typeof THEMES)[number]`.
 
 ## 6. CSS
 
-- `globals.css` has four sections, in order: Tailwind import, `@theme
-inline`, `[data-theme]` blocks, base element rules. Nothing else.
+- `globals.css` has five sections, in order: Tailwind import and
+  `@plugin`, `@theme inline`, `[data-theme]` blocks, `@utility` blocks that
+  map plugins to tokens (`prose-tokens`), base element rules. Nothing else.
 - No other `.css` files. No CSS Modules. No styled-jsx.
 - Values that appear in two places become a token.
 
@@ -128,9 +129,10 @@ inline`, `[data-theme]` blocks, base element rules. Nothing else.
   commit body saying what it replaces or enables.
 - Allowed by default: `next`, `react`, `react-dom`, `tailwindcss`,
   `@tailwindcss/turbopack`, `@tailwindcss/typography`, `@next/mdx`,
-  `@mdx-js/loader`, `@mdx-js/react`, `@types/mdx`, `server-only`, `clsx`,
-  `tailwind-merge`, `typescript`, `eslint`, `eslint-config-next`,
-  `prettier`, `prettier-plugin-tailwindcss`; in M4 also `@playwright/test`.
+  `@mdx-js/loader`, `@mdx-js/react`, `@types/mdx`, `remark-gfm`,
+  `server-only`, `clsx`, `tailwind-merge`, `typescript`, `eslint`,
+  `eslint-config-next`, `prettier`, `prettier-plugin-tailwindcss`; in M4
+  also `@playwright/test`.
 - Needs justification: anything else. Animation libraries, icon packs with
   hundreds of icons, UI kits, state managers, and date libraries are
   presumed unnecessary for this site.
