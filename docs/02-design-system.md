@@ -290,8 +290,11 @@ CTA: `Continue to Contact →`.
 
 ### 6.4 Contact `/contact`
 
-H1 `Contact.` One sentence. Email as a large mono link. `ListSection` of
-socials (GitHub, LinkedIn, …). Optional one-liner on freelance availability.
+H1 `Contact.` One sentence. The email from `lib/site.ts` as a large mono
+`mailto:` link that breaks anywhere rather than overflow (`docs/04 §3`).
+Optional one-liner on freelance availability. Then `ListSection`
+`Socials.`, one `ListItem` per social link (GitHub, LinkedIn, …). No form
+(`docs/06` Q5).
 
 ### 6.5 404
 

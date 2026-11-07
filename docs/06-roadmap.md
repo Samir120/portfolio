@@ -206,6 +206,6 @@ changes a rule, in an ADR.
   the home page. `/projects` uses `ProjectCard`, which shows a screenshot
   once one exists (`docs/02 §6.3`). Closed at T4.
 - **Q4 Writing section.** Ship hidden until two posts exist. Decide at T10.
-- **Q5 Contact form vs `mailto:`.** Default: `mailto:` link + socials. A form
-  would need an API route and spam handling; not worth it in v1. Closed at
-  T7.
+- **Q5 Contact form vs `mailto:`.** `mailto:` link plus socials, no form. A
+  form would need an API route and spam handling; not worth it in v1.
+  Closed at T7.

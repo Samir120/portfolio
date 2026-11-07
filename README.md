@@ -93,7 +93,7 @@ Push to `main` → CI gates → image `ghcr.io/samir120/portfolio:<sha>` →
 ## Status
 
 Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
-**M2 — Content.**
+**M3 — Polish.**
 
 ## Docs
 

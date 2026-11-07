@@ -42,7 +42,9 @@ Theme = (typeof THEMES)[number]`.
 - **Metadata** via the `metadata` export or `generateMetadata`; never
   `<head>` tags in JSX.
 - **Links** via `next/link` for internal routes, `ExternalLink` for external
-  ones. Never a bare `<a href="/about">`.
+  ones. Never a bare `<a href="/about">`. The one plain `<a>` outside
+  `ExternalLink` is the `mailto:` link on `/contact`: an email address is
+  not a route, and it must not open a new tab.
 - **Images** via `next/image` with explicit `width`/`height` or `fill`, and
   `sizes` whenever `fill` is used. No `<img>`.
 - **Fonts** via `next/font` only. No `<link>` to Google Fonts.
