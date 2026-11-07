@@ -67,8 +67,9 @@ renders a `FigureGrid` directly. A generated image route in the root
 segment (`app/opengraph-image.tsx`) adds 1.0 kB to every route: none of
 it is image code; Turbopack moves the layout's client components into a
 chunk of their own. A committed static PNG would cost nothing, but the
-card is generated (`docs/02 §8`). First load is therefore 146.1 kB on
-`/`, `/about`, `/projects` and `/projects/[slug]`, and 140.4 kB on
+card is generated (`docs/02 §8`). The theme re-apply in `ThemeToggle`
+(`docs/03 §5`) adds 0.1 kB. First load is therefore 146.2 kB on
+`/`, `/about`, `/projects` and `/projects/[slug]`, and 140.5 kB on
 `/contact` and `/_not-found`, which leaves about 4 kB under the
 ceiling. The numbers are re-baselined when Next.js is
 upgraded.
@@ -126,10 +127,15 @@ tripwire.
 Once per milestone, by hand:
 
 - Keyboard-only walk of every page. Tab order makes sense; nothing is
-  trapped; the skip link works.
+  trapped; the skip link works. Shift+Tab back up a long page: focus
+  never disappears under the sticky header. Code blocks take focus and
+  scroll with the arrow keys.
 - Screen reader pass (Orca on Linux) of the home page and one case study.
 - Contrast check of every token pair in both themes with a contrast tool.
 - Zoom to 200%. Nothing overflows horizontally.
+- Lighthouse Accessibility, mobile profile, against `next start`, every
+  route in both themes. Lighthouse does not score a `404` response; check
+  the two not-found pages by hand, in both themes.
 
 Findings become tasks, not comments.
 

@@ -27,7 +27,7 @@ Consequences:
 ```
 portfolio/
 ├── app/                      # Next.js App Router — routes and route-level files only
-│   ├── layout.tsx            # root: fonts, theme script, header, footer, ensureStatic
+│   ├── layout.tsx            # root: fonts, theme script, skip link, header, footer, ensureStatic
 │   ├── page.tsx              # /
 │   ├── globals.css           # tokens, @theme inline, base styles
 │   ├── icon.svg              # favicon (file convention)
@@ -164,6 +164,8 @@ Components, so `/projects/[slug]` rejects an unknown slug by calling
 `noindex`, and is cached like any other path. The not-found UI for it
 arrives in the RSC payload, so without JavaScript the response body is
 empty; the top-level 404 (`/_not-found`) is prerendered and unaffected.
+React renders that whole document in the browser, so the inline theme
+script never runs on it; `ThemeToggle` re-applies the theme (§5).
 
 ## 4. Content pipeline (ADR-0002, ADR-0005)
 
@@ -230,6 +232,11 @@ app/projects/[slug]/page.tsx
   the codebase. It is ~10 lines, has no dependencies, and exists solely to
   avoid a flash of the wrong theme. It reads `localStorage.theme`, falls back
   to `prefers-color-scheme`, and sets the attribute.
+- `ThemeToggle` repeats the script's choice in a `useLayoutEffect`, before
+  paint, for the one document React renders entirely in the browser: an
+  unknown case-study slug (§3). Everywhere else it writes the value the
+  script already set. This is the re-apply pattern from the Next.js
+  "Preventing flash before hydration" guide.
 - `color-scheme` is set per theme so native form controls and scrollbars
   match.
 - `suppressHydrationWarning` on `<html>` is required and documented: the

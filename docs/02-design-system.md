@@ -161,6 +161,13 @@ blocks and an entry in `lib/themes.ts`. Not in v1.
   at all times; it only shows once content scrolls under it. Left: `/`
   wordmark (home link, mono, brand colour on hover). Right: Home · About ·
   Projects · Contact · theme button with a `kbd` showing `T`.
+- **Skip link:** the first focusable element on every page, a plain
+  fragment link `Skip to content` that targets `<main id="main">`. Hidden
+  until focused, then shown top-left over the header in `text-sm` on `bg`.
+- **Scroll offset:** `<html>` carries `scroll-pt-20`, so whatever the
+  browser scrolls into view (a focused link, an anchor, the skip target)
+  lands clear of the sticky header. Elements take no `scroll-mt-*` of
+  their own.
 - **Footer:** `border-t border-border-subtle`, `bg-bg-deep`. Name · © year ·
   "Built with Next.js" · social links · location stamp `STOCKHOLM` in mono
   uppercase.
@@ -310,6 +317,13 @@ Same chrome. Mono `404` as eyebrow, H1 `Not found.`, link home.
   script in `layout.tsx` (reads `localStorage`, falls back to
   `prefers-color-scheme`). `T` cycles themes; the button does the same.
   `transition-colors duration-150` on `body` only.
+- Theme button name: it starts with the visible word and ends with the
+  theme it switches to (`Theme, switch to White`), so voice control can
+  target it by what it shows. The `kbd` is `aria-hidden`;
+  `aria-keyshortcuts="T"` announces the shortcut.
+- Code blocks in MDX bodies scroll sideways when a line is wider than the
+  measure, so each `pre` takes `tabIndex={0}` and scrolls with the arrow
+  keys.
 - Motion respects `prefers-reduced-motion`. There is almost none to respect.
 
 ## 8. Assets

@@ -42,15 +42,18 @@ Theme = (typeof THEMES)[number]`.
 - **Metadata** via the `metadata` export or `generateMetadata`; never
   `<head>` tags in JSX.
 - **Links** via `next/link` for internal routes, `ExternalLink` for external
-  ones. Never a bare `<a href="/about">`. The one plain `<a>` outside
-  `ExternalLink` is the `mailto:` link on `/contact`: an email address is
-  not a route, and it must not open a new tab.
+  ones. Never a bare `<a href="/about">`. Two plain `<a>`s exist outside
+  `ExternalLink`. The `mailto:` link on `/contact`: an email address is
+  not a route, and it must not open a new tab. The skip link in the root
+  layout: the browser's own fragment navigation moves keyboard focus to
+  `<main>`, while `next/link` only scrolls.
 - **Images** via `next/image` with explicit `width`/`height` or `fill`, and
   `sizes` whenever `fill` is used. No `<img>`.
 - **Fonts** via `next/font` only. No `<link>` to Google Fonts.
 - **No `useEffect` for derived data.** If it can be computed from props,
   compute it. Effects are for subscriptions (the `T` keydown listener) and
-  nothing else.
+  for syncing the DOM with a browser value (`ThemeToggle`'s
+  `useLayoutEffect` theme re-apply, `docs/03 §5`), nothing else.
 - File names: `kebab-case.tsx`. Component names: `PascalCase`. One component
   per file, named the same as the file.
 
@@ -147,8 +150,14 @@ Theme = (typeof THEMES)[number]`.
 
 - Every page has exactly one `h1`. Heading levels do not skip.
 - Every interactive element is a `button` or an `a`. No `div onClick`.
-- Icon-only controls carry `aria-label`. The theme button announces the
-  theme it will switch to.
+- Icon-only controls carry `aria-label`. A control with visible text has
+  an accessible name that contains that text. The theme button's name
+  starts with "Theme" and announces the theme it will switch to.
+- Every page starts with a skip link to `<main>`.
+- Anything that scrolls on its own (an MDX code block) is focusable.
+- Nothing the browser scrolls to may end up under the sticky header. The
+  scroll padding on `<html>` handles it; don't add per-element
+  `scroll-mt-*`.
 - Focus is visible on every element, in both themes.
 - Contrast is checked for every new token pair before it is used.
 - `prefers-reduced-motion` disables the one or two transitions that exist.
