@@ -211,7 +211,9 @@ py-4`, not a card. Boxes are reserved for windows: project cards, the
 border-border-subtle`; project cards add a mono title bar on `bg-deep`.
 - **Mobile:** single column always. Below `sm` the header collapses to
   wordmark + a text "Menu" toggle + theme button; no hamburger icon. The
-  toggle opens the same nav list in a panel under the header.
+  toggle opens the same nav list in a panel under the header. The panel
+  sits on `bg-deep` with a `border-strong` line below it, so it stands apart
+  from the page it covers.
 
 ## 5. Components
 
@@ -234,11 +236,15 @@ border-border-subtle`; project cards add a mono title bar on `bg-deep`.
 | `ThemeToggle`    | Client component. Button + `T` key. Persists to `localStorage`.                |
 | `MobileMenu`     | Client component. The nav list, the current page, the "Menu" button below `sm` |
 | `Kbd`            | Inline keyboard hint in mono                                                   |
-| `ExternalLink`   | `<a>` with `rel="noopener noreferrer"` and a trailing `↗`                      |
+| `ExternalLink`   | `<a>` with `rel="noopener noreferrer"` and a trailing drawn arrow (SVG)        |
 | `OgCard`         | Open Graph card rendered by `next/og` (§8)                                     |
 
 Every component is a Server Component unless listed as client. Only
 `ThemeToggle` and `MobileMenu` are client components.
+
+The external arrow is an inline SVG in `currentColor`, sized in `em`. The
+`↗` character is not in the `latin` font subset, and iOS falls back to its
+colour emoji for it. Elsewhere in these documents `↗` stands for that arrow.
 
 ### 5.1 Photos
 
