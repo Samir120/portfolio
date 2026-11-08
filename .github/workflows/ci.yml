@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+# Inlined into the bundle at build time (docs/07 §6).
+env:
+  NEXT_PUBLIC_SITE_URL: https://samir.swadestack.com
+
 jobs:
   typecheck:
     name: typecheck
@@ -56,5 +60,30 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-        env:
-          NEXT_PUBLIC_SITE_URL: https://TODO.swadestack.com # docs/06 Q1
+
+  build-image:
+    name: build-image
+    needs: [typecheck, lint, format, build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Replaces the workflow's permissions for this job, so contents is repeated.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/samir120/portfolio:${{ github.sha }}
+          build-args: NEXT_PUBLIC_SITE_URL=${{ env.NEXT_PUBLIC_SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
