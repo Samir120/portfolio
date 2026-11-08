@@ -1,81 +1,138 @@
 export const meta = {
   title: "NazerAuto",
   summary:
-    "Bilingual car workshop platform with a service and parts catalog, Stripe ordering, and an admin dashboard.",
+    "Bilingual booking and payment platform for a car workshop, with Stripe checkout, pay-at-workshop orders, Dari invoices, and 2FA.",
   year: 2026,
-  stack: [
-    "React",
-    "TypeScript",
-    "Redux Toolkit",
-    "Tailwind CSS",
-    "Node.js",
-    "Express",
-    "Sequelize",
-    "PostgreSQL",
-    "Stripe",
-  ],
+  stack: ["React", "TypeScript", "Node.js", "PostgreSQL", "Stripe"],
   links: {
     live: "https://nazerauto.com",
     code: "https://github.com/Samir120/Nazir-Car-Service",
   },
-  featured: true,
+  featured: false,
+  order: 2,
 };
 
-## Overview
+## Problem
 
-NazerAuto is the website and workshop platform for Nazer Workshop, a car repair and spare parts business. Customers can browse services and parts, check what fits their vehicle, and order and pay online. The workshop manages its catalog, orders, and content from an admin dashboard.
+NazerAuto lets customers of a car workshop browse services such as oil
+changes, tyre swaps and brake work, book them, and pay. Three things shaped
+how it had to be built.
 
-The whole platform is bilingual, in English and Dari (Persian), including right-to-left layout and translated email notifications.
+The first is language. Many of the customers read Dari more comfortably than
+English, so the whole site had to work in both, including right-to-left
+layout, emails, and the PDF invoice that arrives after payment.
 
-## The problem
+The second is payment. Some customers want to pay online, others prefer to
+pay when they arrive at the workshop. Both had to end in the same place: a
+paid order and an invoice in the customer's language.
 
-The workshop needed one place to present its services and spare parts to customers who speak either English or Dari, take paid orders online, and manage everything without touching code.
+The third is that the workshop should not need a developer for day-to-day
+changes. Services, prices, workshops on the map, the front-page content, the
+about page and site settings are all edited from an admin panel, and the site
+can be put into maintenance mode from there too.
 
 ## Architecture
 
-The project is split into a React frontend and a Node.js API, both written in TypeScript.
+The frontend is a React and TypeScript single-page app built with Vite and
+styled with Tailwind CSS. It follows a model–view–viewmodel split: API
+clients and types in `models`, logic in custom hooks under `viewModels`, and
+components in `views`. Redux Toolkit holds shared state, i18next provides
+every string, and workshops are shown on a Leaflet map.
 
-**Backend:** Express, Sequelize, PostgreSQL, organized in layers:
+The backend is an Express API in TypeScript on PostgreSQL with Sequelize,
+layered as routes, controllers, services and repositories. The parts that
+carry the most weight are:
 
-- `controllers` and `routes` handle HTTP only
-- `services` contain the business logic
-- `integration` holds repositories and data access
-- `models` define Sequelize models and DTOs
-- `middleware` handles auth, errors, and language detection
+- **Orders and payment.** Orders are priced on the server, paid through
+  Stripe or at the workshop, and moved through explicit statuses.
+- **Invoices and email.** Invoices are generated as PDFs with PDFKit, and
+  every email is a Handlebars template with an English and a Dari version.
+- **Accounts.** Passwords are hashed with bcrypt, sessions use JWTs, and
+  two-factor login uses TOTP with the secret encrypted at rest.
+- **Content.** Bilingual fields are stored side by side, so a service has
+  `name_en` and `name_prs`, and the admin panel edits both at once.
 
-Keeping HTTP, business rules, and data access separate means each layer can change without breaking the others.
+The site runs on a single server. The frontend is built to static files, and
+the backend runs as a PM2 process.
 
-**Frontend:** React, Redux Toolkit, Tailwind CSS, Vite, organized by role:
+## Decisions
 
-- `views` contain components, pages, and layouts
-- `viewModels` are custom hooks that hold the logic for each view
-- `models` contain the API client and shared types
-- `store` holds the Redux slices
+**The server decides the price, and payment is confirmed twice.** When an
+order is created, the backend looks up each service's price in the database
+and ignores any total sent by the browser. For online payment it creates a
+Stripe PaymentIntent carrying the order ID. After Stripe confirms the
+payment, the frontend asks the backend to verify it, and Stripe's webhook
+reports the same event independently. Both paths check that the
+PaymentIntent has succeeded and belongs to this order, and both stop if the
+order is already paid. Whichever arrives first marks it paid, and the
+customer gets exactly one invoice.
 
-Pages stay focused on rendering, while the hooks own the state and API calls.
+**Paying at the workshop is its own state, not a missing payment.** An order
+paid online goes from `pending` to `pending_payment` to `paid`. An order paid
+at the workshop goes to `pending_workshop` and waits there until an admin
+marks it paid at the counter, which sends the same invoice email. Keeping the
+two flows as separate states means neither has to guess what the other meant.
+Transitional states are written directly through the repository, so they do
+not trigger a status email the customer has no use for.
 
-## Key features
+**Every message follows the order's language.** The language a customer used
+at checkout is stored on the order. Status updates, payment confirmations and
+invoices sent days later use that language, not whatever the admin happens to
+be viewing. The frontend has 1,245 translation keys in each language and the
+backend 126, and a small script fails if either side is missing a key.
 
-- **Service and parts catalog** with search, filtering, and vehicle compatibility
-- **Online ordering** with Stripe payments
-- **Two-factor authentication** using TOTP, on top of JWT sessions and bcrypt-hashed passwords
-- **Full bilingual support**: i18next on the frontend, language-aware middleware on the backend, and RTL layout for Dari
-- **Bilingual email notifications** rendered from Handlebars templates
-- **Admin dashboard** for services, orders, and site content
-- **Responsive design** across mobile and desktop
+**Dari invoices are shaped before they are drawn.** PDFKit lays text out left
+to right and does not join Arabic-script letters. For Dari invoices, each
+word is reshaped into its connected forms, the word order is reversed so the
+line reads correctly in a left-to-right renderer, and the text is set in the
+Vazir font with the layout mirrored. It is a workaround rather than full
+bidirectional text support, but it produces invoices that read naturally for
+ordinary names, addresses and service titles.
 
-## Deployment
+**Images as files, not strings in the database.** The first version stored
+the uploaded logo and favicon as base64 data URIs in the settings table, so
+every settings request carried the images with it. In February 2026 a
+migration decoded them into files under `/uploads` and replaced the columns
+with paths. An earlier migration renamed every Hazaragi (`_haz`) column and
+enum value to Dari (`_prs`) when the language choice changed, and that one
+can be rolled back.
 
-The frontend is built with Vite into static assets. The backend compiles TypeScript and runs in production under PM2. Seed scripts set up the service catalog and the initial admin account.
+## Results
 
-## Outcome
+- The first commit went in on 31 January 2026, and version 1.0 was published
+  on 24 February. Two-factor login followed in March.
+- The site runs in production at nazerauto.com and is registered with Google
+  Search Console, with a sitemap and SEO metadata on each page.
+- Nine transactional emails, from verification and password reset to order
+  confirmation, status updates and 2FA recovery, each exist in English and
+  Dari, 18 templates in all.
+- Online and pay-at-workshop orders both end in the same paid state and the
+  same invoice, in the customer's language.
+- Two-factor login verifies codes within one time step. A lost authenticator
+  can be recovered with a single-use code sent by email, valid for ten
+  minutes, and the 2FA endpoints are rate limited per user.
 
-NazerAuto is live at [nazerauto.com](https://nazerauto.com) as Nazer Workshop's public website. It gives the business an online presence in both of its customers' languages, a way to take paid orders, and a dashboard the owners can use to update services and content themselves.
+## What I'd change
 
-## What I learned
-
-**Bilingual means more than translated strings.** Supporting Dari affected the layout direction, spacing, and icons in the UI, and it reached the backend too: error messages and emails had to follow the user's language, not just the page.
-
-**Payments and authentication need care at every step.** Integrating Stripe and adding TOTP-based two-factor authentication meant thinking about failure cases, secrets, and what the server should trust, not just the happy path.
-
-**Structure pays off as a project grows.** Separating controllers, services, and data access on the backend, and views from view-model hooks on the frontend, kept features easy to add and bugs easy to locate.
+- **Tests.** Jest is configured, but there are no tests. I would start with
+  order pricing and the payment state transitions, since a mistake there
+  either charges the wrong amount or loses a paid order.
+- **Migrations, not `sync`.** The backend still calls Sequelize's
+  `sync({ alter: true })` on every start, in production too. This is the same
+  problem I later fixed in SwadeStack, and the fix would be the same: a
+  baseline migration from the live schema and `sync` in development only.
+- **Rate limiting where it matters most.** `express-rate-limit` is installed
+  but not used, so login and registration are not limited. Only the 2FA
+  endpoints are, and that limiter lives in memory.
+- **State that survives a restart.** Recovery codes and rate-limit counters
+  are kept in in-process maps. A restart clears them, and a second instance
+  would not see them. They belong in the database or a shared store.
+- **Shorter sessions.** Access tokens live for seven days with no refresh
+  rotation. I would move to short-lived access tokens and rotating refresh
+  tokens, as SwadeStack does now.
+- **A deployment pipeline.** There is no CI, and deploying means building on
+  the server and restarting PM2 by hand. Moving it onto the same GitOps setup
+  as SwadeStack would give it checks on every push and a promotion step.
+- **Failed payments.** A failed Stripe payment is logged, but the customer is
+  not told. They should get an email in their language with a link back to
+  the order, so they can try again.

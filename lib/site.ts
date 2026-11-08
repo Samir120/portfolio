@@ -138,5 +138,17 @@ export const SITE = {
       by: "Stanley B. Lippman, Josée Lajoie, Barbara E. Moo",
       year: 2025,
     },
+    { title: "C++ Crash Course", by: "Josh Lospinoso", year: 2025 },
+    {
+      title: "The Rust Programming Language",
+      by: "Steve Klabnik, Carol Nichols, Chris Krycho",
+      year: 2024,
+    },
+    {
+      title: "Programming Rust",
+      by: "Jim Blandy, Jason Orendorff, Leonora F. S. Tindall",
+      year: 2024,
+    },
+    { title: "Rust in Action", by: "Tim McNamara", year: 2024 },
   ],
 } as const satisfies Site;

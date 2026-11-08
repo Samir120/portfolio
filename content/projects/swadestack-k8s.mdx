@@ -1,0 +1,141 @@
+export const meta = {
+  title: "swadestack-k8s",
+  summary:
+    "GitOps platform for SwadeStack on a single-node k3s cluster: staged deploys, manual promotion, monitoring, and tested backups and recovery.",
+  year: 2026,
+  stack: ["Kubernetes", "Argo CD", "GitHub Actions", "Prometheus"],
+  links: {
+    live: "https://swadestack.com",
+    code: "https://github.com/Samir120/swadestack-k8s",
+  },
+  featured: true,
+  order: 5,
+};
+
+## Problem
+
+Until August 2026, SwadeStack ran as a PM2 process on my home server, next to
+a local PostgreSQL database. Deploying meant logging in, pulling, building and
+restarting by hand. There was no staging environment, no record of what was
+running, no alert if the site went down, and no tested way to rebuild the
+machine if the disk died.
+
+I wanted the opposite. Every change to production should be a commit, there
+should be a staging environment that sees each build first, and the whole
+platform should be rebuildable from a fresh install by following a written
+procedure. All of that still had to fit on one small server at home, alongside
+other services that were already running there.
+
+## Architecture
+
+The platform is a single-node k3s cluster managed entirely through Git. Argo
+CD runs an app-of-apps setup: one root application points at this
+repository and creates eleven child applications, one for each part of the
+platform.
+
+- **Platform.** Argo CD's own configuration, Traefik as the ingress
+  controller, Sealed Secrets, Reloader, and `cloudflared` for the tunnel.
+- **Monitoring.** kube-prometheus-stack for Prometheus, Grafana and
+  Alertmanager, Blackbox Exporter for uptime probes, and a separate
+  application for alert rules, probes and the dashboard.
+- **SwadeStack.** A staging and a production application, built from one
+  Kustomize base with an overlay per environment. Staging runs at
+  `lab.swadestack.com`, production at `swadestack.com`.
+
+Every application syncs automatically, prunes what is removed from Git and
+heals drift, so a manual `kubectl` change is reverted to what the repository
+says. Helm charts and the Argo CD install are pinned to exact versions.
+
+No ports are open to the internet. `cloudflared` connects out to Cloudflare,
+which forwards requests through the tunnel to Traefik inside the cluster.
+The Argo CD and Grafana dashboards go through the same tunnel, behind
+Cloudflare Access and then their own login.
+
+```text
+app repo (push to main) -> GitHub Actions -> GHCR image tagged with commit SHA
+                        -> commit SHA to staging overlay -> Argo CD -> staging
+manual workflow         -> same SHA to production overlay -> Argo CD -> production
+```
+
+## Decisions
+
+**Two repositories, with clear ownership.** The application repository owns
+the source code, quality checks, image builds and the workflows that deploy.
+This repository owns only the desired state of the cluster. At first the
+application code lived here too. I removed it once the platform was stable,
+so a change to the cluster cannot hide inside an application commit, and the
+history of this repository reads as a log of what ran where.
+
+**Deployments, rollbacks and restores are commits.** Staging is updated by
+the pipeline on every push, and production is promoted by a manual workflow
+that copies the exact image SHA staging is running. A rollback is a commit
+that sets the production overlay back to an earlier SHA, never
+`kubectl rollout undo`. The two workflows that write to this repository share
+one concurrency lock, rebase before pushing, retry a push that fails without
+a conflict, and stop on a real conflict instead of forcing. That way the
+pipeline can never silently overwrite a rollback I made by hand.
+
+**Order is part of the configuration.** Argo CD sync waves create things in
+the order they depend on each other: the namespace first, then secrets,
+configuration and the database, then the schema migration as a sync hook,
+and only then the new backend. If the migration fails, the old version keeps
+running. Reloader restarts a deployment when its configuration or secrets
+change, so a new value never waits for the next release to take effect.
+
+**Secrets live in Git, encrypted.** Database credentials, the tunnel token
+and the SMTP password for alerts are stored as Sealed Secrets, which only the
+controller in the cluster can decrypt. That makes the controller's private
+key the one thing Git cannot restore, so it is backed up off the server, and
+the recovery procedure restores it before anything that depends on it syncs.
+
+**Backups are only real once they leave the server and are checked.** Every
+night, CronJobs dump the database in PostgreSQL's custom format, list the
+dump with `pg_restore` to prove it can be read, and archive the uploaded
+files. A systemd timer on the server then exports the backups out of the
+cluster, and a timer on a second machine pulls them over SSH. Each step
+writes a success marker only after it has finished. Prometheus alerts if a
+backup in the cluster is stale or has never succeeded, and on both machines a
+freshness check sends an email if its marker grows too old. I tested the
+alert path by removing a marker on purpose and confirming the email arrived.
+
+## Results
+
+- The platform went from an empty repository to production in under a week
+  at the end of August 2026. The cut-over from PM2 took one planned
+  maintenance window for the data migration, after which the old process,
+  database, user and source tree were removed from the server.
+- By September the history held 12 staging deploys and 6 production
+  promotions. I tested a production rollback to an older SHA and the roll
+  forward again, and each was a single commit.
+- A written bootstrap and disaster-recovery runbook of 44 sections covers
+  rebuilding the cluster from a fresh k3s install, restoring the Sealed
+  Secrets key, restoring PostgreSQL and the uploads from a backup, and
+  verifying each step. It also lists everything deliberately kept outside
+  Git, so nothing is forgotten during a rebuild.
+- Production and staging have resource requests and limits, and one Grafana
+  dashboard shows both environments: HTTP status and response time,
+  PostgreSQL health and connections, CPU, memory and disk, backup age, and
+  any alerts currently firing.
+- Alerts reach me by email when production has been unreachable for two
+  minutes, when PostgreSQL is down, when a volume is nearly full, when the
+  certificate is within 14 days of expiry, and when any backup is stale.
+
+## What I'd change
+
+- **An off-site backup copy.** Backups leave the server, but the second
+  machine sits in the same home. A fire or a break-in would take both. An
+  encrypted copy in object storage elsewhere would close that gap.
+- **Keep data when a claim is deleted.** PostgreSQL and the uploads use the
+  `local-path` storage class with a `Delete` reclaim policy, so removing the
+  volume claim removes the data. The runbook warns about it, but a `Retain`
+  policy would make the mistake recoverable instead of relying on care.
+- **Pin every image.** `cloudflared` still runs on the `latest` tag, so an
+  upstream release can change production without a commit, which breaks the
+  rule the rest of the platform follows.
+- **Network policies.** Pods inside the cluster can reach each other freely.
+  Policies that let only the backend reach the database would limit the
+  damage of a compromised component.
+- **The host as code.** The k3s configuration and the systemd units for
+  backup export, freshness checks and alerts are set up by hand and
+  documented in the runbook. Managing them with Ansible would make a rebuild
+  one command for the host as well as the cluster.

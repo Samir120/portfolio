@@ -1,91 +1,141 @@
 export const meta = {
   title: "Leta",
   summary:
-    "Typo-tolerant, search-as-you-type product search server in C++20. Specification complete, implementation in progress.",
+    "Self-hosted, typo-tolerant product search server in C++20, specified before it was built and tested on every push.",
   year: 2026,
-  stack: ["C++20", "CMake", "cpp-httplib", "simdjson"],
+  stack: ["C++20", "CMake", "Docker", "GitHub Actions"],
   links: {
     code: "https://github.com/Samir120/leta",
   },
   featured: true,
+  order: 3,
 };
 
-## Overview
+## Problem
 
-Leta is a small, self-hosted search server for product catalogs. It indexes JSON documents and answers typo-tolerant, search-as-you-type queries over a plain HTTP/JSON API, in the same category as Meilisearch and Typesense.
+SwadeStack's search box runs on PostgreSQL. That works for exact words, but
+a shop needs more: a customer types `corsiar ddr` and expects the Corsair
+DDR5 memory, types `skarm` and expects the monitors listed as _skärm_, and
+expects results to update with every keystroke. Meilisearch and Typesense
+solve this well. Leta is my own server in the same category: a small search
+index that sits next to the database, is fed from it, and answers typed,
+typo-tolerant, search-as-you-type queries over a plain HTTP and JSON API.
 
-It sits next to your database, not in place of it. Documents live in the system of record, and Leta's index is derived from them and can always be rebuilt. Its first production workload will be the product search for [swadestack.com](https://swadestack.com).
-
-## Status
-
-**Pre-alpha.** The full specification set is written and the repository scaffolding is in place. Product code begins at milestone M1, and progress is tracked milestone by milestone in the roadmap and changelog.
-
-Everything below describes the target design.
-
-## What it will do
-
-```bash
-curl -X POST localhost:7700/indexes/products/search \
-  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"q":"corsiar ddr","limit":3}'
-```
-
-- `corsiar` matches **Corsair** with one typo
-- `ddr` matches **DDR5** as a prefix, because the last term is treated as still being typed
-- Swedish and English diacritics fold, so `skarm` finds **Skärm**
-
-The API is defined up front as an OpenAPI 3.1 contract, with a guide showing how to keep the index in sync with a PostgreSQL source of truth.
-
-## Why build it
-
-- **Small enough to understand.** One binary, one data directory, one config file.
-- **Self-hosted.** No per-query cost, and no data leaving your network.
-- **Built from first principles.** The inverted index, postings compression, typo tolerance, and ranking are implemented directly rather than wrapped from a library, and each structural choice is documented.
+I had two goals. The first is practical: Leta's first production workload
+is the product search on swadestack.com, so it has to be fast, predictable
+and easy to run. The second is to build a small systems project properly,
+from written specifications through to reproducible benchmarks, and to
+implement the inverted index, compression, typo tolerance and ranking from
+first principles rather than wrapping a library.
 
 ## Architecture
 
-Leta follows a ports-and-adapters design, with dependencies pointing inward only:
+Leta is one binary with one data directory, shipped as a multi-architecture
+container image. The code is split into three layers with dependencies
+pointing inward only:
 
-- `src/core` is the pure domain: tokenizer, index, postings, ranker, and typo automaton. It depends on nothing but the C++ standard library.
-- `src/application` orchestrates the core and owns the interfaces for storage and HTTP.
-- `src/adapters` contains the replaceable I/O layers: HTTP, storage, config, and metrics.
+- **Core.** The pure domain: tokenizer, index, document store, error types.
+  It depends on the standard library and nothing else.
+- **Application.** Services that orchestrate the core, and the port
+  interfaces they need, such as the HTTP server, the index repository and
+  the clock.
+- **Adapters.** The replaceable I/O: an HTTP server on cpp-httplib, JSON
+  parsing with simdjson, storage, configuration and metrics.
 
-The rule isn't just a convention. A CI job fails the build if `src/core` ever links a third-party dependency.
+Dependencies are injected through constructors, with no singletons. Errors
+travel as values in a `Result<T, Error>` type rather than as exceptions,
+and every error the server produces leaves as the same JSON body with a
+stable code, a message and the request ID.
 
-## Design targets
+The concurrency model is decided ahead of the code that needs it. One
+indexer thread applies every write, so the index structures need no locks.
+Readers take an immutable snapshot with a single atomic load and keep it for
+the whole query, and a new snapshot is published with a single atomic store.
+A search never waits for an ingest.
 
-For a 100,000-document catalog on a 4-vCPU host:
+```text
+HTTP request -> adapter (cpp-httplib, simdjson) -> application service -> core
+                                                      |
+                              index repository port <-+-> clock port
+```
 
-| Metric                          | Target                                          |
-| ------------------------------- | ----------------------------------------------- |
-| Search latency, p50 / p99       | 2 ms / 10 ms at 50 concurrent clients           |
-| Search during concurrent ingest | No p99 degradation; reads never block on writes |
-| Indexing throughput             | ≥ 5,000 documents/s                             |
-| Startup restore                 | ≤ 15 s                                          |
-| Single-core search throughput   | ≥ 2,000 queries/s                               |
+## Decisions
 
-These are targets, not measurements. Benchmarks will be published with machine details and a committed dataset so they can be reproduced.
+**Specifications first, with requirements traced to tests.** Before any
+product code there was a project brief, 52 functional and 14 non-functional
+requirements, an OpenAPI 3.1 contract, an architecture document, a roadmap,
+a quality strategy and coding standards: about 3,000 lines in all. Each
+larger choice is an Architecture Decision Record that names the
+alternatives and why they lost, and there are ten so far. Every test is
+tagged with the requirement it covers, and a check in CI fails if a _Must_
+requirement has neither a test nor a tracked entry explaining why not.
 
-## Scope
+**The layering is enforced by the build.** A rule in a document is easy to
+break by accident, so the configure step checks it. It inspects the link
+graph to make sure the core links no third-party target, and it reads the
+include lines to make sure the core includes only the standard library and
+the application layer never includes an adapter. A violation stops the
+build with a message naming the file and the line.
 
-v1 deliberately leaves out filtering, faceting, sorting, synonyms, stemming, replication, vector search, and an admin UI. Leta is also designed to run behind a backend, not exposed directly to the internet. Keeping the scope binding is what makes the rest achievable for a solo project.
+**Documents are stored exactly as they were sent.** Incoming batches are
+parsed with simdjson's on-demand API, and each document is kept as its
+original bytes. Numbers, key order and formatting come back unchanged,
+because nothing is re-serialized on the way through. Since on-demand
+parsing only validates what it reads, ingest deliberately reads every value
+of every document, so a malformed batch is rejected instead of half-stored.
 
-## How it's being built
+**The thread pool is sized to connections, not cores.** cpp-httplib serves
+each keep-alive connection on its own worker thread until the connection
+closes, and Node's HTTP agent keeps connections alive by default. A pool
+sized to four cores would leave most of fifty concurrent clients waiting.
+The default is 64 workers, the trade-off is documented, and the metrics will
+show how many connections are waiting for a thread.
 
-Leta is an exercise in doing a small systems project properly:
+**The same toolchain floors in CI as in the documentation.** The README
+promises GCC 13, Clang 17 and CMake 3.25, so CI builds on exactly those
+versions, on x86-64 and arm64. Code that only a newer compiler accepts fails
+in CI instead of for someone building it later. Dependencies are fetched
+through CPM, pinned by version and checked by hash.
 
-- **Specifications before code**: project brief, requirements, API contract, architecture, roadmap, quality strategy, and coding standards, all written first
-- **Architecture Decision Records** for every structural choice, including the alternatives considered
-- **Requirement IDs traced to tests**, with a CI check for coverage
-- **Modern CMake** with presets, and Linux-only builds; other platforms run the container
-- **Planned quality gates**: unit, integration, contract, recovery, relevance, fuzz, and benchmark tests
+## Results
 
-Implementation is drafted with an AI pair and reviewed, built, and accepted by me. Every design and acceptance decision is mine.
+- The server runs over real HTTP. It answers `GET /health`, creates indexes
+  with `POST /indexes`, and accepts batches of documents with
+  `POST /indexes/{uid}/documents`, indexing the words of their top-level
+  string fields. Every response carries an `X-Request-Id`, echoed or
+  generated.
+- At the latest merge, 94 tests passed in the debug, release, AddressSanitizer
+  and UndefinedBehaviorSanitizer, and ThreadSanitizer builds, and the core
+  library had 98.7% line coverage against a floor of 80%.
+- Three libFuzzer targets cover raw HTTP requests, document batches and
+  create-index bodies. Each replays its committed corpus and fuzzes for 20
+  seconds on every run, and the document target checks that what goes in
+  comes back out byte for byte.
+- CI runs fourteen build legs across both compilers, both architectures and
+  all six presets, plus clang-tidy, clang-format, the requirement-coverage
+  check and the coverage gate. The main branch is protected, and every
+  change lands as a pull request with a written definition of done.
+- The container image builds for amd64 and arm64 from one Dockerfile, and
+  runs as a non-root user on a distroless base.
 
-## What I'm learning
+## What's next
 
-**Design is cheaper on paper.** Writing the requirements and ADRs first forced decisions about concurrency, persistence, and scope before any of them could become expensive to change.
-
-**Architecture can be enforced, not just described.** Turning the layering rule into a CI check means the design stays true as the code grows.
-
-**Modern C++ and CMake are their own discipline.** Structuring the build with presets, modules, and checks has been as much of the work as the search engine itself.
+- **Search, end to end.** The last step of the first milestone is
+  `POST /indexes/{uid}/search`, completing the path from an HTTP request to
+  a hit. The tokenizer and index behind it today are deliberately simple and
+  marked in the code as throwaway.
+- **The real index.** A sorted term dictionary with block-compressed,
+  delta-encoded postings and skip lists, then prefix matching and typo
+  tolerance through a Damerau–Levenshtein automaton, then ranking. Memory use
+  is measured as soon as the index exists, while the structures are still
+  cheap to change.
+- **Persistence.** A write-ahead log with checksummed records and snapshots,
+  so the index survives a restart, with crash tests before the first
+  release. That is the `v0.1.0` checkpoint.
+- **Published benchmarks.** The targets are 2 ms median and 10 ms p99 search
+  latency at 50 concurrent clients over 100,000 documents. They will be
+  published with the machine details and a committed dataset, so anyone can
+  reproduce them. Until then they are targets, not results.
+- **Running it on swadestack.com.** The final milestone replaces
+  SwadeStack's database search with Leta, followed by a two-week soak in
+  production.

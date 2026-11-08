@@ -1,0 +1,116 @@
+export const meta = {
+  title: "Energy Monitoring and Anomaly Detection",
+  summary:
+    "KTH degree project: real-time energy monitoring for IoT smart plugs, with per-device anomaly detection and live alerts in the browser.",
+  year: 2025,
+  stack: ["Python", "scikit-learn", "MQTT", "InfluxDB", "React", "Node.js"],
+  links: {
+    code: "https://github.com/Samir120/Degree-Project",
+  },
+  featured: false,
+  order: 6,
+};
+
+## Problem
+
+This was my degree project at KTH, _Real-Time Energy Monitoring and Anomaly
+Detection in IoT-Based Systems_, completed in spring 2025 as the final 15
+credits of my högskoleingenjör degree in computer engineering.
+
+Smart plugs can report how much power a device draws while it runs. On
+their own, those numbers are just a stream. The question was whether a small system could turn that stream into something useful: show
+each device's consumption live, notice when a device behaves differently
+from its own normal pattern, and tell the user straight away, rather than
+waiting for someone to spot it on a chart or an electricity bill.
+
+Two constraints shaped the work. What counts as unusual differs between
+devices, so a single fixed threshold would not do. And a new device has no
+history, so detection had to work from the first reading and improve as data
+arrived.
+
+## Architecture
+
+The system has three parts, each with one job.
+
+- **IoT server (Python).** Subscribes to each registered plug over MQTT,
+  reads power, current, voltage, temperature and total energy from every
+  status message, scores it for anomalies, and writes it to InfluxDB with
+  the anomaly flag and score attached. When a reading is anomalous, it
+  pushes an event to connected browsers over Socket.IO.
+- **Backend (Node.js and TypeScript).** An Express API on PostgreSQL that
+  owns users and devices: registration, login with a JWT in an HTTP-only
+  cookie, adding and removing devices, and querying a device's recent time
+  series from InfluxDB.
+- **Frontend (React and TypeScript).** A dashboard built with Redux Toolkit,
+  Material UI and Recharts. It shows power and accumulated energy for the
+  last 30 minutes, refreshes every five seconds, and raises a notification
+  with a sound the moment an anomaly event arrives.
+
+```text
+smart plug -> MQTT broker -> IoT server -> InfluxDB <- backend <- dashboard
+                                 |                                  ^
+                                 +---- anomaly event (Socket.IO) ---+
+```
+
+## Decisions
+
+**One model per device, trained on its own history.** Anomaly detection uses
+an Isolation Forest from scikit-learn, trained separately for each device on
+its power readings from the last 24 hours. Isolation Forest needs no labelled
+examples of faults, which a project like this does not have, and it is cheap
+enough to retrain often. A background thread retrains every model every five
+minutes, so each device's idea of normal follows how it is actually used.
+
+**Sensitivity adjusts to the data.** Isolation Forest needs to be told what
+share of readings to treat as anomalies. Instead of a fixed value, the
+contamination parameter is derived from each device's own variability, its
+standard deviation relative to its mean, and kept between 1% and 10%. A
+steady device is held to a tighter standard than one whose draw naturally
+moves around.
+
+**A fallback until the model is ready.** A new device, or one with fewer than
+20 readings, has no model yet. Until it does, readings are compared with the
+median power of the last 30 minutes, and a difference of more than 100 W is
+flagged. Training for the device starts in the background at the same time.
+Detection works from the first reading, and the better method takes over as
+soon as there is enough data to support it.
+
+**Each service owns its own data.** Users and devices are relational and
+live in PostgreSQL, behind the Node backend. Telemetry is a high-volume time
+series and lives in InfluxDB, written by the Python server, which is where
+the scientific libraries are. When a device is added, the backend inserts it
+inside a database transaction and then asks the IoT server to subscribe to
+it. If that request fails, the transaction is rolled back, so the system
+never lists a device that nothing is listening to.
+
+## Results
+
+- The finished system monitored live smart plugs end to end: readings
+  arrived over MQTT, were scored and stored as they came in, and appeared on
+  the dashboard within seconds.
+- Anomalies were stored alongside the data with their score, so they can be
+  inspected afterwards as well as seen live, and each one triggered an
+  immediate notification in the browser.
+- Each device was judged against its own recent behaviour, with a working
+  fallback from the first reading and a model that kept itself up to date.
+- The project was approved in June 2025 and completed my degree.
+
+## What I'd change
+
+- **Configuration instead of fixed addresses.** The backend and the frontend
+  reach the IoT server at a fixed local IP address. In a deployment that
+  would come from configuration, and the services would run together as
+  containers.
+- **Safer queries.** The Flux queries are built by inserting the device ID
+  into a string. They should use parameters, so an unexpected ID can never
+  change the query.
+- **Models that survive a restart.** Trained models live only in memory.
+  Saving them, and tracking which version scored which reading, would keep
+  detection consistent across restarts and make results reproducible.
+- **More than one signal.** The model looks at power alone. Current, voltage,
+  temperature and time of day are already stored, and using them together
+  would let it tell a device that is simply busy from one that is behaving
+  strangely.
+- **Tests and an evaluation set.** There are no automated tests. I would
+  start with a recorded dataset with known anomalies, so changes to the
+  detection can be measured instead of judged by eye.
