@@ -80,8 +80,8 @@ operated with the keyboard alone.
   `docs/05 §2` describes.
 - Zero ESLint, TypeScript and Prettier findings on `main`. CI green.
 - Container image under 100 MB compressed, which is what the registry
-  stores and the node pulls. Pod runs within a 128 Mi memory limit without
-  OOM.
+  stores and the node pulls. Pod runs within a 192 Mi memory limit without
+  OOM, including image resizing on a cold cache (`docs/07 §5`).
 - All five routes return 200 through the Cloudflare hostname; `/nope`
   returns a themed 404.
 

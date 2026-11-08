@@ -284,7 +284,7 @@ React.
 Samir120/portfolio          app code, Dockerfile, CI → ghcr.io/samir120/portfolio:<sha>
 Samir120/swadestack-k8s     apps/portfolio/{base,overlays/production} + argocd/applications/portfolio.yaml
 Cloudflare (dashboard)      tunnel public hostname <sub>.swadestack.com → Traefik
-k3s                         namespace portfolio, 1 replica, 128Mi limit
+k3s                         namespace portfolio, 1 replica, 192Mi limit
 ```
 
 The app repo never contains Kubernetes manifests; the GitOps repo never

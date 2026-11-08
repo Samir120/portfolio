@@ -5,8 +5,8 @@ pipeline with one app, one environment and no database: quality gates →
 image on GHCR tagged by commit SHA → a one-line change in `swadestack-k8s` →
 Argo CD syncs → Traefik serves it → Cloudflare tunnel exposes it.
 
-CI (§3) exists from T1 and the image (§4) from T11. §5–§7 arrive with T12;
-until then they are the plan and not live.
+CI (§3) exists from T1, the image (§4) from T11, and the deployment (§5–§8)
+from T12.
 
 ## 1. Versioning
 
@@ -255,9 +255,12 @@ containers:
       httpGet: { path: /api/health, port: http }
       initialDelaySeconds: 10
       periodSeconds: 10
+    lifecycle:
+      preStop:
+        sleep: { seconds: 5 }
     resources:
       requests: { cpu: 25m, memory: 48Mi }
-      limits: { cpu: 200m, memory: 128Mi }
+      limits: { cpu: 200m, memory: 192Mi }
     securityContext:
       runAsNonRoot: true
       runAsUser: 1000
@@ -279,12 +282,29 @@ every route still serves, but those writes fail and are logged (Node reports
 them as `ENOENT`). Neither path exists in the image, so the mounts hide
 nothing. Tested with `docker run --read-only` and a `tmpfs` on each.
 
+The 192 Mi limit is measured. At 128 Mi the pod was OOM-killed by `sharp`
+resizing on a cold image cache, with four requests at a time. At 192 Mi, 16
+requests at a time across both photos and all 15 default widths peaked at
+120 MiB with no restart. Under Docker with 1 GiB available, where the heap
+grows more lazily, four at a time reached 155 MiB.
+
+`preStop` keeps the server answering for 5 s after the pod is told to stop,
+while routing drops the old endpoint. Without it a request failed or stalled
+on both rollouts checked. With it, three rollouts polled four times a second
+returned only 200s.
+
 The repository has no `imagePullSecrets`, so the GHCR package must be
 public. A new package starts private.
+
+`overlays/production/namespace.yaml` carries
+`argocd.argoproj.io/sync-wave: "-3"`, as the SwadeStack overlays do.
 
 `overlays/production/ingress.yaml`:
 
 ```yaml
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
   rules:
@@ -312,11 +332,15 @@ with `path: apps/portfolio/overlays/production`, `namespace: portfolio`,
 automated sync with `prune` and `selfHeal`, `CreateNamespace=true`.
 
 The `deploy` job in `ci.yml` is the SwadeStack `update-gitops` job with
-three changes: one image, the production overlay path, and no "COUNT -ne 2"
-check (expect 1). It uses the same `GITOPS_TOKEN` secret and the same
-`concurrency: group: swadestack-gitops-writer` so two workflows never race
-on the GitOps repo. No promotion workflow: `main` is production
-(`docs/01 §4`).
+three changes: one image, the production overlay path, and a count check
+that expects one `newTag`, not two. It uses the same `GITOPS_TOKEN` secret.
+
+`concurrency: group: swadestack-gitops-writer` is set on the job, so the four
+gates never queue behind it, and it stops two portfolio deploys overlapping.
+GitHub applies a concurrency group within one repository, so it does not
+serialise against the SwadeStack workflows. The push's rebase-and-retry loop
+is what handles a write from the other repository. No promotion workflow:
+`main` is production (`docs/01 §4`).
 
 ## 6. Cloudflare
 
@@ -324,10 +348,10 @@ on the GitOps repo. No promotion workflow: `main` is production
 `cloudflared` tunnel configured with a token (dashboard-managed). Exposing
 the subdomain is therefore a dashboard change, not a manifest:
 
-Zero Trust → Networks → Tunnels → _(the existing tunnel)_ → Public
-Hostname → Add: subdomain `samir`, domain `swadestack.com`, service
-`http://<traefik service>:80` — the same service the `swadestack.com`
-hostname already points at. Cloudflare creates the proxied CNAME.
+Zero Trust → Networks → Tunnels → _(the existing tunnel)_ → Published
+application routes → Add: subdomain `samir`, domain `swadestack.com`, service
+URL `http://traefik.traefik.svc.cluster.local:80`, the same service as the
+other hostnames. Cloudflare creates the CNAME.
 
 Traefik routes by `Host`, so the Ingress host and the tunnel hostname must
 match exactly. TLS terminates at Cloudflare; the tunnel is outbound-only, so
@@ -359,6 +383,14 @@ SwadeStack). No Sealed Secret is needed for the portfolio.
 ## 8. Observability
 
 The cluster already runs Prometheus, Grafana and blackbox-exporter for
-SwadeStack. T12 adds a blackbox probe target for the subdomain and reuses
-the existing alert rule for `probe_success == 0`. No application metrics;
-there is nothing to measure that Lighthouse doesn't.
+SwadeStack. A `portfolio` `Probe` in `swadestack-probes.yaml`
+(`infrastructure/monitoring/`) checks the public URL every 30 s, so it
+covers Cloudflare, the tunnel, Traefik and the pod.
+
+`SwadeStackPortfolioDown` in `swadestack-alerts.yaml` fires when
+`probe_success{job="portfolio"}` is 0 for 2 minutes. Availability rules are
+per `job`, and Alertmanager only emails alerts named `SwadeStack.*`, so the
+rule has its own entry and needs that prefix. The TLS expiry rule has no
+`job` filter and covers the subdomain as it stands.
+
+No application metrics; there is nothing to measure that Lighthouse doesn't.
