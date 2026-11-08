@@ -79,8 +79,9 @@ operated with the keyboard alone.
 - First-load JavaScript for `/` under 150 kB gzipped, measured as
   `docs/05 §2` describes.
 - Zero ESLint, TypeScript and Prettier findings on `main`. CI green.
-- Container image under 200 MB. Pod runs within a 128 Mi memory limit
-  without OOM.
+- Container image under 100 MB compressed, which is what the registry
+  stores and the node pulls. Pod runs within a 128 Mi memory limit without
+  OOM.
 - All five routes return 200 through the Cloudflare hostname; `/nope`
   returns a themed 404.
 

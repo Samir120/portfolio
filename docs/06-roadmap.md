@@ -148,7 +148,7 @@ deploy every future commit.
 - `ci.yml` gains the `build-image` job: GHCR login, buildx, push
   `:<sha>` on `main` only.
 - Exit: image runs locally with `docker run -p 3000:3000`; `/api/health`
-  200; image under 200 MB; pushed to GHCR from CI.
+  200; image under 100 MB compressed; pushed to GHCR from CI.
 
 ### T12 — GitOps: manifests, Argo application, Cloudflare hostname
 
@@ -160,7 +160,6 @@ ingress,kustomization}.yaml`, `argocd/applications/portfolio.yaml`,
 - `ci.yml` gains the `deploy` job that seds `newTag` in the production
   overlay and pushes with the rebase loop, under the shared
   `swadestack-gitops-writer` concurrency group.
-- Decide Q1 (subdomain) before starting.
 - Exit: Argo shows `Synced/Healthy`; the five routes return 200 at the
   subdomain; a push to `main` reaches production without manual steps.
 
@@ -198,7 +197,7 @@ ingress,kustomization}.yaml`, `argocd/applications/portfolio.yaml`,
 | `ensureStatic` validation rejects the content reads in `lib/content.ts` | Low        | `'use cache'` + `cacheLife('max')` fallback is already decided (ADR-0004)     |
 | `@next/mdx` dynamic import pattern changes between Next versions        | Low        | Pin to what `create-next-app` installs; follow the docs page for that version |
 | Copy never gets written                                                 | High       | T10 has "no `TODO:`" as its exit; the site is not v1 without it               |
-| Cluster/Pi availability during T12                                      | Medium     | Nothing in T12 is destructive; retry when the cluster is up                   |
+| Cluster availability during T12                                         | Medium     | Nothing in T12 is destructive; retry when the cluster is up                   |
 | Scope creep (blog, i18n, animations)                                    | High       | Non-goals in `docs/01 §4`; candidates list below                              |
 
 ## After v1 — candidates, not commitments
@@ -217,9 +216,9 @@ Referenced from the other docs as `docs/06 Qn`. Each is closed by the task
 that names it; the decision then lives in that task's commit and, if it
 changes a rule, in an ADR.
 
-- **Q1 Subdomain.** `samir.swadestack.com` (default) vs
-  `portfolio.swadestack.com` vs a `www`-style separate zone. Decide before
-  T12; affects nothing before that.
+- **Q1 Subdomain.** `samir.swadestack.com`. It is `SITE_URL`'s fallback and
+  the value CI builds with; the Ingress host and the tunnel hostname must
+  match it. Closed at T11.
 - **Q2 Photo in hero.** A square portrait beside the name on the home
   page, and one figure on the about page, both tinted by the theme
   (`docs/02 §5.1`). Closed at T3 with no photo on the home page; reopened

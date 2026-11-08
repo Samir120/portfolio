@@ -12,7 +12,7 @@
 </div>
 
 <!-- Add once the domain exists:
-Live: https://TODO.swadestack.com
+Live: https://samir.swadestack.com
 -->
 
 > [!NOTE]
@@ -40,16 +40,16 @@ architecture, coding standards and release pipeline are written down in
 
 ## Stack
 
-| Layer     | Choice                                                                                                                         |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Framework | Next.js (App Router, Server Components, Cache Components, `output: 'standalone'`)                                              |
-| Language  | TypeScript, strict                                                                                                             |
-| Styling   | Tailwind CSS v4, CSS custom-property themes                                                                                    |
-| Content   | MDX in `content/`, typed metadata, `@next/mdx`                                                                                 |
-| Fonts     | Geist + JetBrains Mono via `next/font`                                                                                         |
-| CI        | GitHub Actions — typecheck · lint · format · build                                                                             |
-| Image     | Docker multi-stage, `linux/arm64`, pushed to GHCR                                                                              |
-| Hosting   | k3s on a Raspberry Pi 5, Argo CD GitOps from [`swadestack-k8s`](https://github.com/Samir120/swadestack-k8s), Cloudflare tunnel |
+| Layer     | Choice                                                                                                                      |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js (App Router, Server Components, Cache Components, `output: 'standalone'`)                                           |
+| Language  | TypeScript, strict                                                                                                          |
+| Styling   | Tailwind CSS v4, CSS custom-property themes                                                                                 |
+| Content   | MDX in `content/`, typed metadata, `@next/mdx`                                                                              |
+| Fonts     | Geist + JetBrains Mono via `next/font`                                                                                      |
+| CI        | GitHub Actions — typecheck · lint · format · build                                                                          |
+| Image     | Docker multi-stage, `linux/amd64`, pushed to GHCR                                                                           |
+| Hosting   | k3s on a home server, Argo CD GitOps from [`swadestack-k8s`](https://github.com/Samir120/swadestack-k8s), Cloudflare tunnel |
 
 ## Design
 
@@ -93,7 +93,7 @@ Push to `main` → CI gates → image `ghcr.io/samir120/portfolio:<sha>` →
 ## Status
 
 Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
-**M3 — Polish.**
+**M4 — Ship.**
 
 ## Docs
 

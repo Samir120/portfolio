@@ -5,8 +5,8 @@ pipeline with one app, one environment and no database: quality gates →
 image on GHCR tagged by commit SHA → a one-line change in `swadestack-k8s` →
 Argo CD syncs → Traefik serves it → Cloudflare tunnel exposes it.
 
-CI (§3) exists from T1. CD (§4–§7) is built in M4; until then this document
-is the plan and nothing here after §3 is live.
+CI (§3) exists from T1 and the image (§4) from T11. §5–§7 arrive with T12;
+until then they are the plan and not live.
 
 ## 1. Versioning
 
@@ -66,6 +66,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NEXT_PUBLIC_SITE_URL: https://samir.swadestack.com
+
 jobs:
   typecheck:
     name: typecheck
@@ -114,14 +117,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-        env:
-          NEXT_PUBLIC_SITE_URL: https://TODO.swadestack.com # docs/06 Q1
 ```
 
-Added in M4, after the four gates:
+Added in M4, after the four gates (`build-image` is in `ci.yml` since T11):
 
 - `build-image` — `needs: [typecheck, lint, format, build]`, `main` only.
-  `docker/setup-buildx-action`, `docker/login-action` (GHCR, `GITHUB_TOKEN`),
+  `docker/setup-buildx-action`, `docker/login-action` (GHCR, `GITHUB_TOKEN`,
+  with `packages: write` at job level; job-level `permissions` replace the
+  workflow's, so `contents: read` is repeated),
   `docker/build-push-action` with `tags: ghcr.io/samir120/portfolio:${{
 github.sha }}` and `cache-from`/`cache-to: type=gha`. See §4.
 - `deploy` — `needs: build-image`. Seds `newTag` in `swadestack-k8s` and
@@ -135,58 +138,83 @@ workflows (`checkout@v6`, `setup-node@v7`, `setup-buildx-action@v4`,
 `login-action@v4`, `build-push-action@v7`). Keep the two repos on the same
 majors so a Dependabot bump in one is a hint for the other.
 
-Required check on `main`: all four quality jobs. Enable branch protection
-once T1 is green.
+Required check on `main`: all four quality jobs. `build-image` does not run
+on pull requests, so requiring it would leave them waiting. Enable branch
+protection once T1 is green, without enforcing it for administrators, or
+direct pushes to `main` are rejected.
 
 ## 4. Container image (T11)
 
 `next.config.ts` sets `output: 'standalone'` (ADR-0001). The Dockerfile is
-the official `with-docker` example from the Next.js repository with the
-image bases pinned to the project's Node major:
+the official `with-docker` example from the Next.js repository at the
+installed version, with four changes: the `26-alpine` base, the npm branch
+of its lockfile conditional only, telemetry off, and the site URL as a build
+argument.
 
 ```dockerfile
-# Dockerfile — follows vercel/next.js/examples/with-docker
-ARG NODE_VERSION=26
+# The official Next.js with-docker example, on alpine for the image budget
+# (docs/01 §5.2) and with the site URL as a build argument. A Node bump
+# changes this line and .node-version.
+ARG NODE_VERSION=26-alpine
 
-FROM node:${NODE_VERSION}-alpine AS base
-
-FROM base AS deps
+FROM node:${NODE_VERSION} AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
-FROM base AS builder
+FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Inlined into the bundle at build time (docs/07 §6).
 ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 RUN npm run build
 
-FROM base AS runner
+FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-USER nextjs
-EXPOSE 3000
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+ENV HOSTNAME="0.0.0.0"
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=builder --chown=node:node /app/public ./public
+# The server writes its prerender and image caches under .next at runtime.
+RUN mkdir .next
+RUN chown node:node .next
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+USER node
+EXPOSE 3000
 CMD ["node", "server.js"]
 ```
 
-`.dockerignore`: `node_modules`, `.next`, `.git`, `docs`, `*.md`,
-`.github`.
+The example defaults to `-slim` and documents alpine as the choice when
+image size matters. Slim adds about 100 MB unpacked. The musl builds of
+every native dependency are in the lockfile.
 
-The `build-image` job builds `linux/arm64` only (the cluster is a
-Raspberry Pi 5), with `platforms: linux/arm64` and QEMU via
-`docker/setup-qemu-action`. Add `linux/amd64` only if the image is ever run
-elsewhere.
+`NEXT_PUBLIC_SITE_URL` is required: without it the variable is an empty
+string, `new URL("")` throws and the build fails.
+
+```sh
+docker build --build-arg NEXT_PUBLIC_SITE_URL=https://samir.swadestack.com -t portfolio:local .
+```
+
+`.dockerignore`: `node_modules/`, `.next/`, `.git/`, `.github/`, `docs/`,
+`*.md`, `Dockerfile*`, `.dockerignore`, `.env*` and local working files.
+`*.md` does not match `.mdx`, and `content/` and `assets/` reach the builder;
+both are traced into `.next/standalone` without
+`outputFileTracingIncludes`.
+
+The budget is 100 MB compressed (`docs/01 §5.2`). Measured at T11: 77.6 MB
+compressed, 225 MB unpacked (`du` inside the image). Docker's
+`DISK USAGE` column, 313 MB, also counts the stored compressed layers, so it
+is not the number to read.
+
+`build-image` builds `linux/amd64`, the architecture of the cluster's one
+node (`homeserver`), natively on the runner, as the SwadeStack images do.
+No emulation is involved.
 
 Health: `app/api/health/route.ts` returns `200 {"status":"ok"}`. It is the
 single request-time route — made so with `await connection()`, since under
@@ -232,9 +260,27 @@ containers:
       limits: { cpu: 200m, memory: 128Mi }
     securityContext:
       runAsNonRoot: true
+      runAsUser: 1000
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
+    volumeMounts:
+      - { name: next-cache, mountPath: /app/.next/cache }
+      - { name: route-cache, mountPath: /app/.next/server/route-cache }
+volumes:
+  - { name: next-cache, emptyDir: {} }
+  - { name: route-cache, emptyDir: {} }
 ```
+
+`runAsUser` is needed because the image's `USER` is the name `node`, and
+Kubernetes cannot verify `runAsNonRoot` against a non-numeric user. The two
+volumes hold what the server writes at runtime: optimised images, unknown
+slugs and background revalidation. With a read-only root and no volumes
+every route still serves, but those writes fail and are logged (Node reports
+them as `ENOENT`). Neither path exists in the image, so the mounts hide
+nothing. Tested with `docker run --read-only` and a `tmpfs` on each.
+
+The repository has no `imagePullSecrets`, so the GHCR package must be
+public. A new package starts private.
 
 `overlays/production/ingress.yaml`:
 
@@ -242,7 +288,7 @@ containers:
 spec:
   ingressClassName: traefik
   rules:
-    - host: TODO.swadestack.com # docs/06 Q1
+    - host: samir.swadestack.com
       http:
         paths:
           - path: /
@@ -279,7 +325,7 @@ on the GitOps repo. No promotion workflow: `main` is production
 the subdomain is therefore a dashboard change, not a manifest:
 
 Zero Trust → Networks → Tunnels → _(the existing tunnel)_ → Public
-Hostname → Add: subdomain `<sub>`, domain `swadestack.com`, service
+Hostname → Add: subdomain `samir`, domain `swadestack.com`, service
 `http://<traefik service>:80` — the same service the `swadestack.com`
 hostname already points at. Cloudflare creates the proxied CNAME.
 
@@ -288,18 +334,18 @@ match exactly. TLS terminates at Cloudflare; the tunnel is outbound-only, so
 no port is opened and no certificate is managed in the cluster. Set the
 zone's SSL mode to Full (it already is for `swadestack.com`).
 
-The chosen subdomain also becomes `NEXT_PUBLIC_SITE_URL` in the build job
-and the Dockerfile `--build-arg`, so canonical URLs and OG image links are
-absolute and correct.
+The subdomain is also `NEXT_PUBLIC_SITE_URL`, set once at the top of
+`ci.yml` and passed to the Dockerfile as a build argument, so canonical URLs
+and OG image links are absolute and correct. Changing it means a new build.
 
 ## 7. Release process (after M4)
 
 1. Commit to `main`. CI runs the four gates.
-2. `build-image` pushes `ghcr.io/samir120/portfolio:<sha>` (arm64).
+2. `build-image` pushes `ghcr.io/samir120/portfolio:<sha>` (amd64).
 3. `deploy` commits `newTag: <sha>` to `swadestack-k8s`.
 4. Argo CD syncs within its poll interval (or immediately via the existing
    GitHub webhook). The Deployment rolls; the readiness probe gates traffic.
-5. Verify: `curl -I https://<sub>.swadestack.com/` → 200; `argocd app get
+5. Verify: `curl -I https://samir.swadestack.com/` → 200; `argocd app get
 portfolio` → Synced/Healthy.
 
 **Rollback** is `git revert` of the `deploy` commit in `swadestack-k8s`.
