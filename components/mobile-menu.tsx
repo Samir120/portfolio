@@ -39,7 +39,7 @@ export function MobileMenu({ items }: { items: readonly NavItem[] }) {
       <nav
         id={NAV_ID}
         aria-label="Main"
-        className="absolute inset-x-0 top-14 hidden border-b border-border-subtle bg-bg px-4 py-2 peer-aria-expanded:block sm:static sm:block sm:border-0 sm:bg-transparent sm:p-0"
+        className="absolute inset-x-0 top-14 hidden border-y border-t-border-subtle border-b-border-strong bg-bg-deep px-4 py-2 peer-aria-expanded:block sm:static sm:block sm:border-0 sm:bg-transparent sm:p-0"
       >
         <ul className="flex flex-col sm:flex-row sm:gap-6">
           {items.map((item) => (
