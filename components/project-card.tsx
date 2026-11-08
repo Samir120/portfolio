@@ -12,7 +12,7 @@ type ProjectCardProps = {
 
 // A project as a terminal-style window: a mono title bar with the index,
 // path and year, then the title, summary, stack and links (docs/02 §6.3).
-// Every card has the same shape; screenshots live on the case study.
+// Every card has the same shape.
 export function ProjectCard({ slug, index, meta }: ProjectCardProps) {
   const separator = (
     <span aria-hidden="true" className="text-text-muted">
