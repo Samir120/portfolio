@@ -24,10 +24,12 @@ result. No unit test framework in v1.
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:standalone": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   }
 }
@@ -38,7 +40,11 @@ with a flat config lints the working directory by default; this is what
 `create-next-app` writes. `typecheck` runs `next typegen` first because
 `next-env.d.ts` and the route types in `.next/types/` are generated and
 git-ignored, so on a clean checkout `tsc` alone would fail before it ever
-reached our code.
+reached our code. `start:standalone` runs the server the image runs:
+`.next/standalone` leaves out `public/` and `.next/static`, so they are
+copied in first, and `HOSTNAME` is set as the Dockerfile sets it. `next
+start` warns that it does not work with `output: 'standalone'`, so nothing
+that tests the build uses it.
 
 `npm run check` is what runs before every commit and what CI runs on every
 push. The two must stay identical; CI has no extra flags.
@@ -69,11 +75,11 @@ it is image code; Turbopack moves the layout's client components into a
 chunk of their own. A committed static PNG would cost nothing, but the
 card is generated (`docs/02 §8`). The theme re-apply in `ThemeToggle`
 (`docs/03 §5`) adds 0.1 kB, and the nav links rendered by `MobileMenu`
-so it can mark the current page add 0.2 kB. First load is therefore
-146.4 kB on `/`, `/about`, `/projects` and `/projects/[slug]`, and
-140.7 kB on `/contact` and `/_not-found`, which leaves about 3.6 kB under
-the ceiling. The numbers are re-baselined when Next.js is
-upgraded.
+so it can mark the current page add 0.2 kB. Those parts were each
+measured when they landed. First load, measured as a whole, is 145.9 kB
+on `/`, `/about`, `/projects` and `/projects/[slug]`, and 140.3 kB on
+`/contact` and `/_not-found`, which leaves about 4 kB under the ceiling.
+The numbers are re-baselined when Next.js is upgraded.
 
 `next build` no longer prints bundle sizes (removed in Next 16), but it
 writes the first-load chunks of every route to
@@ -84,8 +90,14 @@ gzipped total per route:
 node -e 'const z=require("zlib"),fs=require("fs");for(const r of require("./.next/diagnostics/route-bundle-stats.json")){const b=r.firstLoadChunkPaths.reduce((t,p)=>t+z.gzipSync(fs.readFileSync(p)).length,0);console.log(r.route,(b/1000).toFixed(1)+" kB gzipped")}'
 ```
 
-Run it when a task touches anything client-side, until the Lighthouse job
-exists. The stats file is a build diagnostic, not a documented interface;
+Run it when a task touches anything client-side. The `lighthouse` job
+(`docs/07 §3`) also guards the ceiling, with
+`resource-summary:script:size`. That is bytes on the wire, HTTP headers
+included: 148.7 kB against the standalone server and 149.7 kB through
+Cloudflare, so the job turns red about 1.3 kB before the gzipped total above
+reaches the ceiling. Lighthouse has no audit for the largest image; the job
+asserts total image bytes under the same limit, which is stricter. The
+stats file is a build diagnostic, not a documented interface;
 if it moves, `npx next analyze` shows the same chunks, and what is inside
 them, in an interactive view.
 
@@ -110,17 +122,28 @@ them, in an interactive view.
 
 ## 4. The smoke test (M4)
 
-Playwright, one spec file, run against `next start` in CI and against the
-production URL manually after deploy:
+Playwright, one spec file (`tests/smoke.spec.ts`), Chromium only, run
+against the standalone server in CI and against the production URL manually
+after deploy:
 
 1. Each of the five routes returns 200 and has an `h1`.
 2. `/nope` returns 404 with the themed page.
 3. Pressing `T` changes `html[data-theme]` and the value survives a reload.
-4. No `console.error` on any route.
+4. No `console.error` on any of the five routes. `/nope` is left out:
+   Chrome logs every `404` response as a console error.
 5. Every `a[href^="http"]` has `rel="noopener"`.
 
 Five assertions, under thirty seconds. It is not a test suite; it is a
 tripwire.
+
+```
+npm run build && npm run test:e2e
+PLAYWRIGHT_BASE_URL=https://samir.swadestack.com npm run test:e2e
+```
+
+Playwright starts the standalone server itself unless
+`PLAYWRIGHT_BASE_URL` is set. A failing smoke job stops the image from being
+built (`docs/07 §3`).
 
 ## 5. Accessibility review — the non-mechanical part
 
@@ -133,9 +156,13 @@ Once per milestone, by hand:
 - Screen reader pass (Orca on Linux) of the home page and one case study.
 - Contrast check of every token pair in both themes with a contrast tool.
 - Zoom to 200%. Nothing overflows horizontally.
-- Lighthouse Accessibility, mobile profile, against `next start`, every
-  route in both themes. Lighthouse does not score a `404` response; check
-  the two not-found pages by hand, in both themes.
+- Lighthouse Accessibility, mobile profile, against the standalone server
+  or production, every route in both themes. Lighthouse does not score a `404` response; check
+  the two not-found pages by hand, in both themes. An automated contrast
+  check of `/projects/<unknown>` must wait for the page's transitions to
+  finish: it fades from the browser's blank canvas to the theme
+  (`docs/03 §3`), and mid-fade Tokyo Night text fails against a background
+  that is still light.
 
 Findings become tasks, not comments.
 
@@ -154,7 +181,8 @@ Findings become tasks, not comments.
 ```
 npm run dev          # http://localhost:3000, Fast Refresh
 npm run check        # before every commit
-npm run build && npm run start   # when touching anything in docs/07
+npm run build && npm run start:standalone   # when touching anything in docs/07
+npm run test:e2e     # after a build
 ```
 
 Neovim: `typescript-language-server` + `eslint` + `tailwindcss-language-server`

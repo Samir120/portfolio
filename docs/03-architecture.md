@@ -80,10 +80,13 @@ portfolio/
 ├── public/
 │   ├── figures/*.webp
 │   └── cv.pdf
+├── tests/smoke.spec.ts       # Playwright smoke test (docs/05 §4)
 ├── docs/                     # these documents, public
 ├── .github/workflows/ci.yml
 ├── Dockerfile                # M4
 ├── next.config.ts
+├── playwright.config.ts
+├── lighthouserc.json         # Lighthouse budgets (docs/07 §3)
 ├── mdx-components.tsx        # required by @next/mdx, root level
 ├── package.json
 ├── tsconfig.json

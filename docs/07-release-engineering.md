@@ -52,8 +52,9 @@ both files.
 
 ## 3. CI — `.github/workflows/ci.yml`
 
-Runs on every push and pull request. Four quality jobs in parallel; the
-image job (M4) waits for all four and runs on `main` only.
+Runs on every push and pull request. Six jobs in parallel: four quality
+gates, `smoke` and `lighthouse`. The image job (M4) waits for the gates and
+`smoke`, and runs on `main` only.
 
 ```yaml
 name: CI
@@ -119,9 +120,10 @@ jobs:
       - run: npm run build
 ```
 
-Added in M4, after the four gates (`build-image` is in `ci.yml` since T11):
+Added in M4, after the four gates:
 
-- `build-image` — `needs: [typecheck, lint, format, build]`, `main` only.
+- `build-image` — `needs: [typecheck, lint, format, build, smoke]`, `main`
+  only.
   `docker/setup-buildx-action`, `docker/login-action` (GHCR, `GITHUB_TOKEN`,
   with `packages: write` at job level; job-level `permissions` replace the
   workflow's, so `contents: read` is repeated),
@@ -129,17 +131,26 @@ Added in M4, after the four gates (`build-image` is in `ci.yml` since T11):
 github.sha }}` and `cache-from`/`cache-to: type=gha`. See §4.
 - `deploy` — `needs: build-image`. Seds `newTag` in `swadestack-k8s` and
   pushes with the rebase loop. See §5.
-- `smoke` — Playwright against `next start`. `docs/05 §4`.
-- `lighthouse` — `treosh/lighthouse-ci-action` against `next start`,
-  budgets from `docs/05 §2`.
+- `smoke` — `npm run build`, `npx playwright install --with-deps chromium`,
+  `npm run test:e2e` against the standalone server. `docs/05 §4`. It gates
+  `build-image`.
+- `lighthouse` — `npm run build`, then `treosh/lighthouse-ci-action@v12` with
+  `configPath: ./lighthouserc.json` and `uploadArtifacts: true`.
+  `startServerCommand` in that file starts the standalone server; its
+  assertions are the `docs/05 §2` budgets on `/` and `/projects/swadestack`,
+  mobile, three runs, Performance on the median run. `budgetPath` stays unset:
+  the action ignores the file's assertions if it is set. The job does not gate
+  `build-image`: a red score fails the run, but a score from a shared runner
+  is too noisy to hold back a deploy.
 
 Action major versions match the ones already in use in the SwadeStack
 workflows (`checkout@v6`, `setup-node@v7`, `setup-buildx-action@v4`,
 `login-action@v4`, `build-push-action@v7`). Keep the two repos on the same
 majors so a Dependabot bump in one is a hint for the other.
 
-Required check on `main`: all four quality jobs. `build-image` does not run
-on pull requests, so requiring it would leave them waiting. Enable branch
+Required checks on `main`: the four quality jobs and `smoke`. `build-image`
+does not run on pull requests, so requiring it would leave them waiting.
+`lighthouse` is noisy, so it is not required either. Enable branch
 protection once T1 is green, without enforcing it for administrators, or
 direct pushes to `main` are rejected.
 
@@ -364,7 +375,7 @@ and OG image links are absolute and correct. Changing it means a new build.
 
 ## 7. Release process (after M4)
 
-1. Commit to `main`. CI runs the four gates.
+1. Commit to `main`. CI runs the four gates, `smoke` and `lighthouse`.
 2. `build-image` pushes `ghcr.io/samir120/portfolio:<sha>` (amd64).
 3. `deploy` commits `newTag: <sha>` to `swadestack-k8s`.
 4. Argo CD syncs within its poll interval (or immediately via the existing
