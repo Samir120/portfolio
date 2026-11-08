@@ -87,3 +87,98 @@ jobs:
           build-args: NEXT_PUBLIC_SITE_URL=${{ env.NEXT_PUBLIC_SITE_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: deploy
+    needs: build-image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: swadestack-gitops-writer
+      cancel-in-progress: false
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v6
+        with:
+          repository: Samir120/swadestack-k8s
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: swadestack-k8s
+          fetch-depth: 0
+
+      - name: Update production image tag
+        working-directory: swadestack-k8s
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sed -i \
+            -E "s#(newTag: )[a-f0-9]+#\1${IMAGE_TAG}#g" \
+            apps/portfolio/overlays/production/kustomization.yaml
+
+      - name: Validate GitOps manifests
+        working-directory: swadestack-k8s
+        run: |
+          if git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- apps/portfolio; then
+            echo "Merge conflict markers found"
+            exit 1
+          fi
+
+          kubectl kustomize apps/portfolio/overlays/production >/dev/null
+
+      - name: Verify production image update
+        working-directory: swadestack-k8s
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          grep -A4 '^images:' \
+            apps/portfolio/overlays/production/kustomization.yaml
+
+          COUNT=$(grep -c "newTag: ${IMAGE_TAG}" \
+            apps/portfolio/overlays/production/kustomization.yaml)
+
+          if [ "$COUNT" -ne 1 ]; then
+            echo "Expected the production image to use ${IMAGE_TAG}"
+            exit 1
+          fi
+
+      - name: Commit GitOps change
+        working-directory: swadestack-k8s
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          git config user.name "swadestack-ci"
+          git config user.email "swadestack-ci@users.noreply.github.com"
+
+          git add apps/portfolio/overlays/production/kustomization.yaml
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes required"
+            exit 0
+          fi
+
+          git commit -m "Deploy portfolio ${IMAGE_TAG} to production"
+
+      - name: Rebase and push GitOps change
+        working-directory: swadestack-k8s
+        run: |
+          for ATTEMPT in 1 2 3; do
+            echo "Push attempt ${ATTEMPT}/3"
+
+            git fetch origin main
+
+            if ! git rebase origin/main; then
+              echo "Rebase conflict detected. Refusing to overwrite remote GitOps changes."
+              git rebase --abort || true
+              exit 1
+            fi
+
+            if git push origin HEAD:main; then
+              echo "GitOps update pushed successfully"
+              exit 0
+            fi
+
+            echo "Remote changed before push; retrying..."
+            sleep $((ATTEMPT * 2))
+          done
+
+          echo "Failed to push GitOps update after 3 attempts"
+          exit 1
