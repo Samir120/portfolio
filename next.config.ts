@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // A minimal Node server for the container image (ADR-0001).
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   agentRules: false,

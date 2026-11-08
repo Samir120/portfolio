@@ -1,0 +1,15 @@
+# Installed or generated inside the image
+node_modules/
+.next/
+
+# Not part of a build
+.git/
+.github/
+docs/
+*.md
+Dockerfile*
+.dockerignore
+
+# Never in the build context
+.env*
+.private/
