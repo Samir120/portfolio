@@ -64,7 +64,7 @@ portfolio/
 │   ├── kbd.tsx
 │   ├── external-link.tsx
 │   └── og-card.tsx           # Open Graph card, rendered by next/og
-├── content/                  # the site's data — MDX and TS, no JSX layout
+├── content/                  # the site's data — MDX only
 │   ├── projects/
 │   │   ├── swadestack.mdx
 │   │   └── …
@@ -78,12 +78,12 @@ portfolio/
 │   └── types.ts              # ProjectMeta; PostMeta with the first post
 ├── assets/fonts/             # Geist TTFs + OFL.txt for next/og, not served
 ├── public/
-│   ├── figures/*.webp
-│   └── cv.pdf
+│   └── figures/*.webp
 ├── tests/smoke.spec.ts       # Playwright smoke test (docs/05 §4)
 ├── docs/                     # these documents, public
 ├── .github/workflows/ci.yml
 ├── Dockerfile                # M4
+├── .dockerignore
 ├── next.config.ts
 ├── playwright.config.ts
 ├── lighthouserc.json         # Lighthouse budgets (docs/07 §3)
@@ -250,7 +250,7 @@ app/projects/[slug]/page.tsx
 ## 6. Data flow for `lib/site.ts`
 
 One file holds every fact about the person: name, role line, socials,
-location, email, CV path, and the structured sections of the about page
+location, email, and the structured sections of the about page
 (pillars, experience, education, reading). Every page imports from it. Changing the role
 line is a one-line change in one file. Nothing in `app/` contains a
 hard-coded personal fact.
@@ -264,8 +264,8 @@ React.
 
 ## 7. What is deliberately absent
 
-- **No state management, no context providers** except what `next/font`
-  needs. Theme state lives in the DOM attribute.
+- **No state management, no context providers.** Theme state lives in the
+  DOM attribute.
 - **No `src/` directory.** Flat root is the create-next-app default and the
   repo is small.
 - **No barrel files** (`components/index.ts`). They defeat tree-shaking
@@ -286,7 +286,7 @@ React.
 ```
 Samir120/portfolio          app code, Dockerfile, CI → ghcr.io/samir120/portfolio:<sha>
 Samir120/swadestack-k8s     apps/portfolio/{base,overlays/production} + argocd/applications/portfolio.yaml
-Cloudflare (dashboard)      tunnel public hostname <sub>.swadestack.com → Traefik
+Cloudflare (dashboard)      published route samir.swadestack.com → Traefik
 k3s                         namespace portfolio, 1 replica, 192Mi limit
 ```
 

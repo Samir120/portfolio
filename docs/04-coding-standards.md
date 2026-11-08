@@ -32,13 +32,13 @@ Theme = (typeof THEMES)[number]`.
 
 - **Server Components by default.** A file gets `'use client'` only if it
   uses state, effects, event handlers, or browser APIs. The directive is
-  followed by a one-line comment saying which of those it is.
+  followed by a short comment saying which of those it is.
 - **Push client boundaries to the leaves.** `SiteHeader` is a Server
   Component that renders a client `ThemeToggle`; not the other way round.
 - **No data fetching in components.** Data comes from `lib/` functions
   called in `page.tsx` and passed down as props.
-- **Props are typed inline** for components with ≤ 3 props, as a named
-  `type XProps` above the component otherwise.
+- **Props are typed inline** for one or two props and as a named
+  `type XProps` above the component from four; at three, either.
 - **Metadata** via the `metadata` export or `generateMetadata`; never
   `<head>` tags in JSX.
 - **Links** via `next/link` for internal routes, `ExternalLink` for external

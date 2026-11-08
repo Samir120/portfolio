@@ -5,6 +5,10 @@ when every task in it is committed and CI is green; a task is "done" when
 its exit criteria hold on `main`. Weeks assume evenings and weekends; they
 are an ordering, not a deadline.
 
+All fifteen tasks are done, and the tag `v1.0.0` marks the result. The tasks
+stay as they were planned; where a later task replaced earlier work (T10b
+removed T5's screenshots and T6's figure grid), the later task holds.
+
 Each task below lists the files it touches so it can be scoped from this
 document alone. Open questions are collected at the end; a task that
 decides one says so.

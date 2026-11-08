@@ -15,8 +15,9 @@ from T12.
   SHA, never `latest`, never a branch name.
 - Git tags `v1.0.0`, `v1.1.0`… mark milestones for humans. Nothing in the
   pipeline reads them.
-- Node is pinned in `.node-version`; Next, React and Tailwind in
-  `package.json`. All are bumped deliberately in their own `chore:` commits.
+- Node is pinned in `.node-version`, Next and React in `package.json`, and
+  everything else, Tailwind included, in `package-lock.json`. All are bumped
+  deliberately in their own `chore:` commits.
 
 ## 2. Scaffold (T1)
 
@@ -331,7 +332,7 @@ spec:
 `overlays/production/kustomization.yaml`:
 
 ```yaml
-resources: [namespace.yaml, ../../base, ingress.yaml]
+resources: [../../base, namespace.yaml, ingress.yaml]
 namespace: portfolio
 images:
   - name: ghcr.io/samir120/portfolio

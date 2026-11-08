@@ -62,14 +62,14 @@ Semantic layer, the only names components may use:
 bg-deep        footer band, title bars
 bg             page background
 surface        code blocks
-surface-2      hover backgrounds
+surface-2      hover backgrounds (reserved; no component uses it yet)
 border-subtle  default 1px borders
 border-strong  emphasised dividers, hover frames
 text           primary
 text-secondary
 text-muted
 brand          accent: current page, primary button, focus ring
-brand-soft     12% brand, for tinted backgrounds
+brand-soft     12% brand, for tinted backgrounds (reserved, likewise)
 brand-ink      text on a brand-filled surface
 selection      ::selection background
 photo-shadow   darkest colour of a tinted photo

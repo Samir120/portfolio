@@ -24,11 +24,11 @@ conversations.
 
 ## 2. Users
 
-| User                       | What they need in 30 seconds                                    |
-| -------------------------- | --------------------------------------------------------------- |
-| Recruiter / hiring manager | Role, stack, 2–3 real projects with outcomes, CV one click away |
-| Prospective client         | Evidence of shipped, maintained software; a way to reach him    |
-| Fellow developer           | Code links, architecture decisions, something worth reading     |
+| User                       | What they need in 30 seconds                                 |
+| -------------------------- | ------------------------------------------------------------ |
+| Recruiter / hiring manager | Role, stack, 2–3 real projects with outcomes                 |
+| Prospective client         | Evidence of shipped, maintained software; a way to reach him |
+| Fellow developer           | Code links, architecture decisions, something worth reading  |
 
 All three read on a phone as often as on a laptop. All three leave if the
 page is slow.
@@ -36,8 +36,8 @@ page is slow.
 ## 3. In scope (v1)
 
 - Five routes: `/`, `/about`, `/projects`, `/projects/[slug]`, `/contact`.
-- One fully written case study (SwadeStack) and short entries for the other
-  projects, each with live and code links where they exist.
+- A written case study for every project, SwadeStack first, each with live
+  and code links where they exist.
 - A terminal-inspired design system: Geist + JetBrains Mono, zero border
   radius, hairline borders, a token-driven theme with Tokyo Night (dark,
   default) and White (light), switchable with a button and the `T` key.
@@ -45,7 +45,8 @@ page is slow.
   projects and contact pages.
 - Static rendering of every route. Correct metadata, Open Graph image,
   sitemap, robots, 404.
-- CI on every push: typecheck, lint, format, build. Container image on GHCR.
+- CI on every push: typecheck, lint, format, build, a smoke test and
+  Lighthouse budgets. Container image on GHCR.
 - Deployment to the k3s cluster via `swadestack-k8s` and Argo CD, reachable at
   a swadestack.com subdomain through the existing Cloudflare tunnel.
 
@@ -94,8 +95,8 @@ operated with the keyboard alone.
 ## 6. Relationship to other projects
 
 The portfolio is one of the projects it describes. SwadeStack is the lead
-case study. Kontera and Leta appear as entries once they have something to
-show. The portfolio's own repository, CI and GitOps manifests are themselves
+case study; the others, Kontera and Leta among them, follow it. The
+portfolio's own repository, CI and GitOps manifests are themselves
 evidence for the "can he explain it" question, which is why `docs/` is
 public and written carefully.
 

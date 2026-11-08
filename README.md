@@ -5,19 +5,15 @@
 **Samir's personal site.** Next.js, self-hosted on k3s, deployed by Argo CD.
 
 [![CI](https://github.com/Samir120/portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/Samir120/portfolio/actions/workflows/ci.yml)
-[![Status](https://img.shields.io/badge/status-in_progress-yellow)](docs/06-roadmap.md)
+[![Status](https://img.shields.io/badge/status-live-brightgreen)](https://samir.swadestack.com)
 [![Next.js](https://img.shields.io/badge/Next.js-App_Router-000?logo=nextdotjs&logoColor=white)](https://nextjs.org/docs)
 [![License](https://img.shields.io/badge/code-MIT-blue)](#license)
 
+**[samir.swadestack.com](https://samir.swadestack.com)**
+
 </div>
 
-<!-- Add once the domain exists:
-Live: https://samir.swadestack.com
--->
-
-> [!NOTE]
-> **In progress.** The specification in `docs/` is complete; the site is
-> being built milestone by milestone. See [Status](#status).
+![The home page of the portfolio in the Tokyo Night theme](docs/screenshot.png)
 
 **Contents** ·
 [What this is](#what-this-is) ·
@@ -47,7 +43,7 @@ architecture, coding standards and release pipeline are written down in
 | Styling   | Tailwind CSS v4, CSS custom-property themes                                                                                 |
 | Content   | MDX in `content/`, typed metadata, `@next/mdx`                                                                              |
 | Fonts     | Geist + JetBrains Mono via `next/font`                                                                                      |
-| CI        | GitHub Actions — typecheck · lint · format · build                                                                          |
+| CI        | GitHub Actions — typecheck · lint · format · build · Playwright smoke test · Lighthouse budgets                             |
 | Image     | Docker multi-stage, `linux/amd64`, pushed to GHCR                                                                           |
 | Hosting   | k3s on a home server, Argo CD GitOps from [`swadestack-k8s`](https://github.com/Samir120/swadestack-k8s), Cloudflare tunnel |
 
@@ -56,7 +52,8 @@ architecture, coding standards and release pipeline are written down in
 Terminal-inspired and still: Geist and JetBrains Mono, no rounded corners,
 hairline borders, and themes named after terminal colour schemes. Tokyo
 Night is the default; press <kbd>T</kbd> to switch. Every colour is a
-semantic token, so a theme is one block of CSS variables. The full spec is
+semantic token, so a theme is one block of CSS variables, and photos are
+tinted in the theme's own colours. The full spec is
 [`docs/02-design-system.md`](docs/02-design-system.md).
 
 ## Structure
@@ -66,7 +63,9 @@ app/          routes and Next.js file conventions only
 components/   shared UI, one component per file
 content/      MDX — projects
 lib/          pure TypeScript — site facts, content loader, themes
-public/       images, CV
+public/       images
+assets/       fonts for the generated Open Graph cards
+tests/        Playwright smoke test
 docs/         specification and ADRs
 ```
 
@@ -81,6 +80,7 @@ Requires the Node version in `.node-version`.
 npm ci
 npm run dev        # http://localhost:3000
 npm run check      # typecheck + lint + format + build — run before every commit
+npm run test:e2e   # smoke test, after a build; needs `npx playwright install chromium`
 ```
 
 ## Deploy
@@ -92,8 +92,9 @@ Push to `main` → CI gates → image `ghcr.io/samir120/portfolio:<sha>` →
 
 ## Status
 
-Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
-**M4 — Ship.**
+Live at [samir.swadestack.com](https://samir.swadestack.com), tagged
+`v1.0.0`. Every push to `main` deploys. What was built, in order, and what
+may come next is in [`docs/06-roadmap.md`](docs/06-roadmap.md).
 
 ## Docs
 
@@ -110,5 +111,6 @@ Tracked in [`docs/06-roadmap.md`](docs/06-roadmap.md). Current milestone:
 
 ## License
 
-Code is MIT. Written content, images and the CV under `content/` and
-`public/` are © Samir and not licensed for reuse.
+Code is MIT. Written content and images under `content/` and `public/` are
+© Samir and not licensed for reuse. The fonts in `assets/fonts/` are under
+the SIL Open Font License (`OFL.txt` beside them).

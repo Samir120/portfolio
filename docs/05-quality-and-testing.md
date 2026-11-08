@@ -76,7 +76,9 @@ chunk of their own. A committed static PNG would cost nothing, but the
 card is generated (`docs/02 §8`). The theme re-apply in `ThemeToggle`
 (`docs/03 §5`) adds 0.1 kB, and the nav links rendered by `MobileMenu`
 so it can mark the current page add 0.2 kB. Those parts were each
-measured when they landed. First load, measured as a whole, is 145.9 kB
+measured when they landed, and they add up to 0.5 kB more than the whole:
+the total fell between two later measurements and the cause was not
+traced. First load, measured as a whole, is 145.9 kB
 on `/`, `/about`, `/projects` and `/projects/[slug]`, and 140.3 kB on
 `/contact` and `/_not-found`, which leaves about 4 kB under the ceiling.
 The numbers are re-baselined when Next.js is upgraded.
@@ -106,19 +108,20 @@ them, in an interactive view.
 - **Static-ness.** `app/layout.tsx` exports `ensureStatic = 'navigation'`
   (ADR-0004), so the build fails if any page or layout needs uncached or
   request-time data, or a dynamic route lacks a complete
-  `generateStaticParams`. The route table still shows every page as `○`
-  and only `/api/health` as `ƒ`; the difference is that this is now
-  enforced rather than eyeballed. Image routes sit outside the rule
-  (`docs/03 §3`): check that `opengraph-image` stays `○` and each
-  case-study image `●`.
+  `generateStaticParams`. The route table reports the result: every page
+  `○` and only `/api/health` `ƒ`, except that `/projects/[slug]` shows `◐`
+  on its fallback row and on its collapsed `[+N more paths]` row. Those
+  case studies still arrive complete without JavaScript. Image routes sit
+  outside the rule (`docs/03 §3`): check that `opengraph-image` stays `○`
+  and each case-study image `●`.
 - **Content validation.** `lib/project-module.ts` throws at build if a
   file's `meta` is missing a required field, has a field of the wrong type
   or has an unknown one, and the error names the file and the field
   (ADR-0005). `tsc` cannot do this: it does not read `.mdx`. A bad MDX
   file cannot produce a deployed page.
-- **Link integrity.** Internal links use typed route strings from
-  `lib/routes.ts` (added when there are more than five). Until then, the
-  smoke test covers it.
+- **Link integrity.** Not checked mechanically. The smoke test loads the
+  five routes but does not follow links; internal links are few and point
+  at those routes or at slugs from `listProjects()`.
 
 ## 4. The smoke test (M4)
 
@@ -170,8 +173,8 @@ Findings become tasks, not comments.
 
 - Component rendering in isolation. The build renders every component on
   every page; a broken component is a broken build.
-- Visual regression. Two themes and a dozen components do not justify a
-  screenshot pipeline.
+- Visual regression. Two themes and about twenty small components do not
+  justify a screenshot pipeline.
 - The Kubernetes manifests, beyond `kubectl kustomize` in the GitOps
   workflow (`docs/07 §5`).
 - Content accuracy. That is editorial.
