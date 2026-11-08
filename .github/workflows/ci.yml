@@ -61,9 +61,42 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  # The server the image runs, so what is tested is what ships (docs/05 §4).
+  smoke:
+    name: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  # Reports budgets (docs/05 §2) but does not gate the image: a score from a
+  # shared runner is too noisy to hold back a deploy.
+  lighthouse:
+    name: lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+
   build-image:
     name: build-image
-    needs: [typecheck, lint, format, build]
+    needs: [typecheck, lint, format, build, smoke]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # Replaces the workflow's permissions for this job, so contents is repeated.

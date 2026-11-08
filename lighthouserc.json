@@ -1,0 +1,28 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npm run start:standalone",
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/projects/swadestack"
+      ],
+      "numberOfRuns": 3
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": [
+          "error",
+          { "minScore": 0.95, "aggregationMethod": "median-run" }
+        ],
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices": ["error", { "minScore": 0.95 }],
+        "categories:seo": ["error", { "minScore": 0.95 }],
+        "resource-summary:script:size": [
+          "error",
+          { "maxNumericValue": 150000 }
+        ],
+        "resource-summary:image:size": ["error", { "maxNumericValue": 150000 }]
+      }
+    }
+  }
+}
