@@ -110,6 +110,12 @@ export const SITE = {
   ],
   reading: [
     {
+      title: "Modern CMake for C++",
+      by: "Rafał Świdziński",
+      year: 2026,
+    },
+    { title: "Learning Go", by: "Jon Bodner", year: 2026 },
+    {
       title: "Machine Learning with PyTorch and Scikit-Learn",
       by: "Sebastian Raschka, Yuxi Liu, Vahid Mirjalili",
       year: 2026,

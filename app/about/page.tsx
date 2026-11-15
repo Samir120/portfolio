@@ -37,7 +37,7 @@ export default function AboutPage() {
             alt="Samir standing with one hand on his hip in front of wooden wall bars at a gym."
             width={1500}
             height={1000}
-            label="Stockholm · 2023"
+            label="Stockholm · 2026"
           />
         </div>
         <p className={PARAGRAPH}>
