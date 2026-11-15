@@ -1,0 +1,151 @@
+export const meta = {
+  title: "loadr",
+  summary:
+    "HTTP load tester in Go using only the standard library, with timed or fixed-count runs, rate limiting, latency percentiles, error classes and a stable JSON report. Released as v0.1.0.",
+  year: 2026,
+  stack: ["Go", "GitHub Actions"],
+  links: {
+    code: "https://github.com/Samir120/loadr",
+  },
+  featured: false,
+  order: 7,
+};
+
+## Problem
+
+loadr is my first Go project, started after finishing _Learning Go_. I
+wanted something small enough to finish and real enough to need what Go is
+good at: concurrency, cancellation, networking and a careful standard
+library. An HTTP load tester fits. It sends N requests to a URL from C
+workers and reports latency percentiles, throughput, status codes and
+errors. Tools like hey, wrk and vegeta already do this. The point was to
+write idiomatic Go, and to have a tool I understand down to the last line
+for measuring SwadeStack.
+
+Sending requests is the easy part of a load tester. The hard part is
+knowing what the numbers mean. Does latency include connection setup? Does
+a timed-out request count toward p99? What happens to requests still in
+flight when the timer runs out? Does a request that failed on the client's
+own machine count toward the rate? Each question has a defensible answer,
+and a tool that does not decide them explicitly reports numbers nobody can
+interpret.
+
+The scope was fixed before the first line of code: ten sessions of three
+and a half hours, a hard stop on 23 November 2026, and a feature list in a
+design document that could not grow during the cycle. Standard library
+only, no dependencies.
+
+## Architecture
+
+```text
+flags -> runner.Config, validated
+  -> runner.Run: c workers, one shared HTTP client, optional rate ticker
+       each worker: claim a slot -> send -> drain the body -> Sample on a channel
+  -> one collector goroutine feeds a stats.Collector
+  -> stats.Summary -> report.Text or report.JSON
+```
+
+There are three internal packages. `runner` owns the worker pool, the
+collector and cancellation. `stats` turns samples into percentiles, a
+status histogram and error classes. `report` renders a summary as aligned
+text or as JSON. Dependencies point one way: the command imports `runner`
+and `report`, and both import `stats`. The internal packages never parse
+flags, print or exit. They take a config struct and return values and
+errors, and only `cmd/loadr` talks to the operating system.
+
+## Decisions
+
+**One collector owns all the state.** Workers never touch shared
+statistics. Each finished request becomes a `Sample` sent on a channel, and
+a single collector goroutine aggregates them, so the hot path has no mutex
+and the statistics cannot race. The only shared mutable value is an atomic
+counter. Each worker claims a request slot with `claimed.Add(1) <= limit`,
+which gives an exact request count under any interleaving without a
+producer goroutine. A timed run sets the limit to the largest `int64`, so
+both modes run the same loop.
+
+**Failures are measurements, not errors.** A failed request counts toward
+the request and error totals and nothing else. Keeping a 10-second timeout
+out of the latency distribution stops it from becoming the p99. A run that
+completes exits 0 however many requests failed, as hey and wrk do, and a
+script gates on the `errors` field of the JSON report. Requests still in
+flight when the timer expires or Ctrl-C arrives are dropped, because
+otherwise every run with 50 workers would end with up to 50 fake errors.
+
+**One cancellation mechanism.** The per-request timeout is a child
+context, not `http.Client.Timeout`. Ctrl-C, the run duration and the
+per-request timeout are then all contexts, and they compose. A worker
+waiting on the rate limiter selects on both the ticker and the context, so
+neither a timed run nor Ctrl-C ever waits for a tick.
+
+**Error classes come from the error chain.** Failures are sorted into six
+classes: `fd_limit`, `timeout`, `dns`, `refused`, `closed` and `other`. The
+classifier uses `errors.Is` against syscall error numbers and `errors.As`
+for `net.Error` and `*net.DNSError`, never string matching. One trap:
+`errors.As` stops at the outermost `net.Error`, which is the `*url.Error`,
+and its `Timeout` method only looks one level down. The classifier
+therefore also checks for `context.DeadlineExceeded` directly. The tests
+build errors with the same wrapping `net/http` uses, from `*url.Error` down
+to the error number, so the unwrapping path is what gets tested.
+
+**The JSON report is a contract.** Fields may be added, never renamed or
+removed. Durations are fractional milliseconds with a `_ms` suffix, every
+field is always present, and the maps are empty objects rather than `null`,
+so a script never has to check for a missing key. The error classes arrived
+as a new field next to the unchanged `errors` total.
+
+**A static binary, except under test.** The design promised a single
+static binary, but with cgo enabled Go's `net` package links against the
+host's libc, so a binary built on Arch might not run on Ubuntu. `make build`
+sets `CGO_ENABLED=0`. `make test` leaves cgo on, because the race detector
+needs it on Linux.
+
+## Results
+
+As of November 2026:
+
+- `v0.1.0` is tagged, eight days before the hard stop and after about 20.5
+  of the 35 planned hours. Nothing on the cut list was cut.
+- The code is about 2,400 lines of Go including tests, with no dependency
+  outside the standard library.
+- On a single-node k3s cluster, a 10-second run with 50 workers sent 11,724
+  requests to a staging site. All were answered with 200, at about 1,170
+  requests per second, with a p50 of 3.3 ms and a p99 of 292.6 ms. loadr ran
+  on the same machine, so the figures describe the box, not the network.
+- The runner is tested only against `httptest` servers that add fixed
+  latency, return a 500 on every fifth request, reset the TCP connection or
+  stream the body slowly. A goroutine-leak test checks that cancellation
+  leaves nothing running. Stress runs under the race detector, 20
+  repetitions each, found nothing.
+- A benchmark puts loadr's cost at about 6 µs per request at 10 workers on
+  an Intel i3-12100, including the in-process test server. The CPU profile
+  showed the time in system calls and `net/http`, and loadr's own collector
+  and statistics fell below the profile's 0.5% cutoff.
+- CI runs gofmt, go vet, staticcheck and `go test -race` on every push.
+- The README documents how loadr measures: what latency includes, how
+  redirects and rate limiting behave, and when the rate cannot be trusted.
+
+## What I'd change
+
+- **Run against the real target on day one.** The first real run came in
+  the ninth session, and that session turned up three problems the tests
+  had not: the build was not actually static, the client follows
+  redirects, so a plain `http://` URL can quietly send the whole test
+  through a CDN, and failures on loadr's own machine inflate the rate. A
+  ten-minute run in the first session would have found them while they were
+  cheap.
+- **Keep local failures out of the rate.** With the file-descriptor limit
+  forced low, a timed run reported 2,560,531 errors and "259,633 req/s".
+  Almost none of those requests left the machine: every dial failed
+  instantly and the workers spun. Version 0.1 keeps one counting rule for
+  all failures and documents the effect. A later version should report
+  local failures apart from the rate.
+- **Measure latency from when a request was due.** The workers are closed
+  loop: each sends its next request only after the previous one finishes.
+  Under a rate limit, a slow server delays the requests queued behind it,
+  and that wait never appears in the latency. This is coordinated omission,
+  and the fix is an open-loop schedule that measures each request from its
+  intended send time.
+- **Generate load from a second machine.** Every real run so far had loadr
+  and the target sharing one CPU, so the published numbers say what the box
+  can do, not what the service can.
