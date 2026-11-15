@@ -20,10 +20,18 @@ function isCurrent(pathname: string, href: string) {
 
 export function MobileMenu({ items }: { items: readonly NavItem[] }) {
   const pathname = usePathname();
-  // The menu is open only on the path it was opened on, so following a link
-  // closes it without an effect.
-  const [openedOn, setOpenedOn] = useState<string | null>(null);
-  const isOpen = openedOn === pathname;
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Any navigation closes the menu, whichever link caused it: a menu link,
+  // the wordmark, or the browser's back button. The state is reset while
+  // rendering, when the pathname differs from the last one seen, instead of
+  // in an effect.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setIsOpen(false);
+  }
 
   return (
     <>
@@ -31,7 +39,7 @@ export function MobileMenu({ items }: { items: readonly NavItem[] }) {
         type="button"
         aria-expanded={isOpen}
         aria-controls={NAV_ID}
-        onClick={() => setOpenedOn(isOpen ? null : pathname)}
+        onClick={() => setIsOpen(!isOpen)}
         className="peer text-sm text-text-secondary hover:text-text sm:hidden"
       >
         Menu
